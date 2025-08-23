@@ -24,8 +24,8 @@ const DEFAULT_MODEL_TIMELINE = [
   { date: new Date('2024-01-01'), model: 'claude-3-sonnet-20240229' }, // Before June 20, 2024
   { date: new Date('2024-06-20'), model: 'claude-3-5-sonnet-20240620' }, // Starting June 20, 2024
   { date: new Date('2024-10-22'), model: 'claude-3-5-sonnet-20241022' }, // Starting October 22, 2024
-  { date: new Date('2025-02-29'), model: 'claude-3-7-sonnet-20250219' }, // Starting February 29, 2025
-  { date: new Date('2025-05-14'), model: 'claude-sonnet-4-20250514' } // Starting May 14, 2025
+  { date: new Date('2025-02-24'), model: 'claude-3-7-sonnet-20250219' }, // Starting February 29, 2025
+  { date: new Date('2025-05-22'), model: 'claude-sonnet-4-20250514' } // Starting May 14, 2025
 ];
 
 // Initialize on page load
