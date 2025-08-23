@@ -85,9 +85,10 @@ function convertToText(data, includeMetadata) {
   const branchMessages = getCurrentBranch(data);
   
   // Use simplified format
-  branchMessages.forEach((message, index) => {
-    const sender = message.sender === 'human' ? 'Human' : 'Assistant';
-    
+  let humanSeen = false;
+  let assistantSeen = false;
+  
+  branchMessages.forEach((message) => {
     // Get the message text
     let messageText = '';
     if (message.content) {
@@ -100,10 +101,15 @@ function convertToText(data, includeMetadata) {
       messageText = message.text;
     }
     
-    // Use abbreviated format after first occurrence
-    const senderLabel = message.sender === 'human' 
-      ? (index === 0 || branchMessages[index - 1].sender !== 'human' ? 'Human' : 'H')
-      : (index === 0 || branchMessages[index - 1].sender !== 'assistant' ? 'Assistant' : 'A');
+    // Use full label on first occurrence, then abbreviate
+    let senderLabel;
+    if (message.sender === 'human') {
+      senderLabel = humanSeen ? 'H' : 'Human';
+      humanSeen = true;
+    } else {
+      senderLabel = assistantSeen ? 'A' : 'Assistant';
+      assistantSeen = true;
+    }
     
     text += `${senderLabel}: ${messageText}\n\n`;
   });
