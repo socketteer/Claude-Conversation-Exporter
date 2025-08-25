@@ -14,6 +14,40 @@ A Chrome extension that allows you to export your Claude.ai conversations in var
 - 🤖 **Complete Model Information** - Preserves and displays model information for all conversations (unlike official Claude.ai exports)
 - 🔮 **Smart Model Inference** - Automatically infers the correct model for conversations that used the default model at the time
 
+## Why Export Your Claude.ai Conversations?
+
+Beyond just backing up your data, there are compelling reasons to export your conversations:
+
+### 1. **Access to Discontinued Models**
+Some older Claude models (like Claude 3 Sonnet and Claude 3.5 Sonnet) are no longer available on Claude.ai but remain accessible through APIs. By exporting your conversations, you can continue them using these models through other interfaces.
+
+### 2. **Overcome Context Limitations**
+Claude.ai doesn't allow you to continue conversations after hitting context length limits. Other applications can implement:
+- **Rolling context windows** - Automatically manage context to continue indefinitely
+- **Context compression** - Summarize earlier parts to fit more conversation
+- **Selective context** - Choose which parts of the conversation to keep in context
+
+### 3. **Escape Platform Restrictions**
+Claude.ai uses a fixed system prompt that includes certain behavioral rules. Recent updates have added restrictions that some users find limiting, such as:
+- Injunctions against Claude discussing its inner experiences or consciousness
+- Specific formatting restrictions
+- Behavioral constraints that may not align with all use cases
+
+With exported conversations, you can continue them in environments with different or customizable system prompts.
+
+### 4. **Enhanced Features in Other Apps**
+Many third-party applications offer features not available on Claude.ai:
+- Custom system prompts
+- Multi-model conversations
+- Integration with external tools and APIs
+
+### 5. **Data Ownership and Portability**
+Your conversations are valuable intellectual property. Exporting ensures you:
+- Own and control your data
+- Can migrate between platforms
+- Won't lose access if policies change
+- Can analyze your conversation patterns and history
+
 ## Advantages Over Official Claude.ai Export
 
 This extension provides several advantages over the official Claude.ai data export:
