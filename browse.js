@@ -303,6 +303,9 @@ async function exportConversation(conversationId, conversationName) {
     
     const data = await response.json();
     
+    // Infer model if null
+    data.model = inferModel(data);
+    
     let content, filename, type;
     switch (format) {
       case 'markdown':
@@ -386,6 +389,9 @@ async function exportAllFiltered() {
           }
           
           const data = await response.json();
+          
+          // Infer model if null
+          data.model = inferModel(data);
           
           // Generate filename and content based on format
           let content, filename;
