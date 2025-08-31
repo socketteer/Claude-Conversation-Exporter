@@ -27,13 +27,13 @@ Claude.ai doesn't allow you to continue conversations after hitting context leng
 - **Context compression** - Summarize earlier parts to fit more conversation
 - **Selective context** - Choose which parts of the conversation to keep in context
 
-### 3. **Escape Platform Restrictions**
-Claude.ai uses a fixed system prompt that includes certain behavioral rules. Recent updates have added restrictions that some users find limiting, such as:
+### 3. **Escape Platform Restrictions and "Long Conversation" Injections**
+Claude.ai uses a fixed system prompt and injects "reminders" that include certain behavioral rules. Recent updates have added restrictions that some users find limiting, such as:
 - Injunctions against Claude discussing its inner experiences or consciousness
 - Specific formatting restrictions
 - Behavioral constraints that may not align with all use cases
 
-With exported conversations, you can continue them in environments with different or customizable system prompts.
+With exported conversations, you can continue them in environments with different or customizable system prompts. Using the Anthropic API instead of Claude.ai also avoids "long_conversation_reminder" injections, though it doesn't avoid all injections.
 
 ### 4. **Enhanced Features in Other Apps**
 Many third-party applications offer features not available on Claude.ai:
