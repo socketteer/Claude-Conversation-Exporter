@@ -30,13 +30,13 @@
     "typescript"
   ],
   "author": "",
-  "license": "MIT",
+  "license": "",
   "packageManager": "pnpm@10.18.1",
   "devDependencies": {
     "@eslint/js": "^9.38.0",
     "@samrum/vite-plugin-web-extension": "^5.1.1",
     "@types/firefox-webext-browser": "^143.0.0",
-    "@types/jszip": "^3.4.1",
+    "@types/jszip": "^3.4.0",
     "@typescript-eslint/eslint-plugin": "^8.46.1",
     "@typescript-eslint/parser": "^8.46.1",
     "eslint": "^9.38.0",

@@ -11,7 +11,7 @@ Both versions share 100% of the TypeScript source code, differing only in their 
 
 ## Project Structure
 
-```
+```text
 /
 ├── README.md                  # This file
 ├── package.json               # pnpm workspace configuration
@@ -48,16 +48,21 @@ Both versions share 100% of the TypeScript source code, differing only in their 
 Beyond just backing up your data, there are compelling reasons to export your conversations:
 
 ### 1. **Access to Discontinued Models**
+
 Some older Claude models (like Claude 3 Sonnet and Claude 3.5 Sonnet) are no longer available on Claude.ai but remain accessible through APIs. By exporting your conversations, you can continue them using these models through other interfaces.
 
 ### 2. **Overcome Context Limitations**
+
 Claude.ai doesn't allow you to continue conversations after hitting context length limits. Other applications can implement:
+
 - **Rolling context windows** - Automatically manage context to continue indefinitely
 - **Context compression** - Summarize earlier parts to fit more conversation
 - **Selective context** - Choose which parts of the conversation to keep in context
 
 ### 3. **Escape Platform Restrictions and "Long Conversation" Injections**
+
 Claude.ai uses a fixed system prompt and injects "reminders" that include certain behavioral rules. Recent updates have added restrictions that some users find limiting, such as:
+
 - Injunctions against Claude discussing its inner experiences or consciousness
 - Specific formatting restrictions
 - Behavioral constraints that may not align with all use cases
@@ -65,13 +70,17 @@ Claude.ai uses a fixed system prompt and injects "reminders" that include certai
 With exported conversations, you can continue them in environments with different or customizable system prompts. Using the Anthropic API instead of Claude.ai also avoids "long_conversation_reminder" injections, though it doesn't avoid all injections.
 
 ### 4. **Enhanced Features in Other Apps**
+
 Many third-party applications offer features not available on Claude.ai:
+
 - Custom system prompts
 - Multi-model conversations
 - Integration with external tools and APIs
 
 ### 5. **Data Ownership and Portability**
+
 Your conversations are valuable intellectual property. Exporting ensures you:
+
 - Own and control your data
 - Can migrate between platforms
 - Won't lose access if policies change
@@ -96,6 +105,7 @@ This extension provides several advantages over the official Claude.ai data expo
 ## Development Setup
 
 ### Prerequisites
+
 - Node.js 18+ and pnpm
 - Chrome or Firefox browser
 - A Claude.ai account
@@ -103,12 +113,14 @@ This extension provides several advantages over the official Claude.ai data expo
 ### Build from Source
 
 1. **Clone the Repository**
+
    ```bash
    git clone [repository-url]
    cd Claude-Conversation-Exporter-Firefox-TS
    ```
 
 2. **Install Dependencies**
+
    ```bash
    pnpm install
    ```
@@ -116,29 +128,34 @@ This extension provides several advantages over the official Claude.ai data expo
 3. **Build the Extension**
 
    For Firefox (TypeScript):
+
    ```bash
    pnpm build:firefox
    # Output: dist/firefox/
    ```
 
    For Chrome (TypeScript):
+
    ```bash
    pnpm build:chrome
    # Output: dist/chrome/
    ```
 
    Build both:
+
    ```bash
    pnpm build
    ```
 
 4. **Development Mode** (auto-rebuild on changes)
+
    ```bash
    pnpm dev:firefox   # Watch mode for Firefox
    pnpm dev:chrome    # Watch mode for Chrome
    ```
 
 5. **Type Checking**
+
    ```bash
    pnpm type-check    # Run TypeScript type checker
    ```
@@ -164,6 +181,7 @@ This extension provides several advantages over the official Claude.ai data expo
 ### Configure Your Organization ID
 
 After installation (either browser):
+
 1. Click the extension icon
 2. Click "Click here to set it up" or access Options
 3. Go to `https://claude.ai/settings/account`
@@ -174,12 +192,14 @@ After installation (either browser):
 ## Usage
 
 ### Export Current Conversation
+
 1. Navigate to any conversation on Claude.ai
 2. Click the extension icon
 3. Choose your export format and metadata preferences
 4. Click "Export Current Conversation"
 
 ### Browse All Conversations
+
 1. Click the extension icon
 2. Click "Browse All Conversations" (green button)
 3. In the browse page, you can:
@@ -190,6 +210,7 @@ After installation (either browser):
    - Export all filtered conversations as ZIP
 
 ### Bulk Export
+
 1. In the browse page, select your format and filters
 2. Click "Export All"
 3. A progress dialog will show the export status
@@ -198,17 +219,20 @@ After installation (either browser):
 ## Export Formats
 
 ### JSON
+
 - Complete data including all branches and metadata
 - Best for data preservation and programmatic use
 - Includes all message versions and conversation branches
 
 ### Markdown
+
 - Human-readable format with formatting
 - Shows only the current conversation branch
 - Includes optional metadata (timestamps, model info)
 - Great for documentation or sharing
 
 ### Plain Text
+
 - Simple format following Claude's prompt style
 - Uses "Human:" and "Assistant:" prefixes (abbreviated to H:/A: after first occurrence)
 - Shows only the current conversation branch
@@ -216,7 +240,7 @@ After installation (either browser):
 
 ## File Structure
 
-```
+```text
 claude-exporter/
 ├── manifest.json          # Extension configuration
 ├── background.js          # Background service worker
@@ -235,32 +259,148 @@ claude-exporter/
 └── icon128.png           # Extension icon (128x128)
 ```
 
+## Firefox Add-ons (AMO) Submission
+
+To prepare for Firefox Add-ons (addons.mozilla.org) submission:
+
+### 1. Build for Production
+
+```bash
+pnpm build:firefox
+```
+
+### 2. Create a Source Code Archive
+
+Firefox AMO requires source code submission for extensions that use build tools:
+
+```bash
+# Create a source code archive excluding unnecessary files
+zip -r claude-exporter-source.zip . \
+  -x "node_modules/*" \
+  -x "dist/*" \
+  -x ".git/*" \
+  -x "*.DS_Store" \
+  -x ".vscode/*" \
+  -x ".idea/*"
+```
+
+### 3. Create the Extension Package
+
+```bash
+cd dist/firefox
+zip -r ../../claude-exporter-firefox.zip .
+cd ../..
+```
+
+### 4. Prepare Build Instructions
+
+Create a `BUILD.md` file to include with your source:
+
+```markdown
+# Build Instructions
+
+## Prerequisites
+- Node.js 18 or higher
+- pnpm package manager
+
+## Build Steps
+1. Install dependencies: `pnpm install`
+2. Build Firefox extension: `pnpm build:firefox`
+3. Extension output will be in `dist/firefox/`
+
+## Verification
+The built extension can be loaded temporarily in Firefox from about:debugging
+```
+
+### 5. Prepare Store Listing Assets
+
+You'll need:
+
+- **Screenshots** (1280x800 or 640x400): Take screenshots of the extension in action
+- **Icons**: Already included (icon16.png, icon48.png, icon128.png)
+- **Description**: Use the features list from this README
+- **Category**: Suggested: "Productivity" or "Other"
+- **License**: Choose an open source license (MIT, GPL, etc.)
+
+### 6. Privacy Policy
+
+Since the extension accesses Claude.ai data, include in your privacy policy:
+
+- The extension only accesses data when explicitly triggered by the user
+- No data is sent to external servers
+- All processing happens locally in the browser
+- User's Claude.ai authentication is used only for API access
+- No telemetry or analytics are collected
+
+### 7. Permissions Justification
+
+Firefox reviewers will want to know why each permission is needed:
+
+- `activeTab`: To interact with the current Claude.ai tab
+- `storage`: To save user's organization ID preference
+- `tabs`: To identify when user is on Claude.ai
+- Host permission for `https://claude.ai/*`: To access Claude.ai API endpoints for exporting conversations
+
+### 8. Submission Process
+
+1. Go to <https://addons.mozilla.org/developers/>
+2. Click "Submit a New Add-on"
+3. Upload `claude-exporter-firefox.zip`
+4. Upload `claude-exporter-source.zip` when prompted
+5. Provide the build instructions from step 4
+6. Fill in the listing information
+7. Submit for review
+
+### 9. Review Notes
+
+In the "Notes to Reviewer" field, mention:
+
+- This extension uses TypeScript and Vite for building
+- Build instructions are included with the source code
+- The extension uses the MV2 manifest (Firefox standard)
+- All API calls are made to claude.ai using the user's existing authentication
+- No external servers or services are contacted
+
 ## Chrome Web Store Submission
 
 To prepare for Chrome Web Store submission:
 
-### 1. Create a ZIP for Submission
+### 1. Build Chrome Extension for Production
+
 ```bash
-cd claude-export
-zip -r claude-exporter.zip claude-exporter/ -x "*.DS_Store" -x "*/.git/*"
+pnpm build:chrome
 ```
 
-### 2. Prepare Store Listing Assets
+### 2. Create a ZIP for Submission
+
+```bash
+cd dist/chrome
+zip -r ../../claude-exporter-chrome.zip .
+cd ../..
+```
+
+### 3. Prepare Store Listing Assets
+
 You'll need:
+
 - **Screenshots** (1280x800 or 640x400): Take screenshots of the extension in action
 - **Promotional Images**: Small tile (440x280), Large tile (920x680) - optional
 - **Description**: Use the features list from this README
 - **Category**: Suggested: "Productivity" or "Developer Tools"
 
-### 3. Privacy Policy
+### 4. Privacy Policy
+
 Since the extension accesses Claude.ai data, you should mention:
+
 - The extension only accesses data when explicitly triggered by the user
 - No data is sent to external servers
 - All processing happens locally in the browser
 - User's Claude.ai authentication is used only for API access
 
-### 4. Permissions Justification
+### 5. Permissions Justification
+
 Be ready to explain why each permission is needed:
+
 - `activeTab`: To interact with the current Claude.ai tab
 - `storage`: To save user's organization ID
 - `scripting`: To inject content scripts for export functionality
@@ -269,19 +409,23 @@ Be ready to explain why each permission is needed:
 ## Troubleshooting
 
 ### "Organization ID not configured"
+
 - Follow the setup steps in the Configuration section
 - Make sure you're copying the complete UUID from the URL
 
 ### "Not authenticated" error
+
 - Make sure you're logged into Claude.ai
 - Try refreshing the Claude.ai page
 
 ### Export fails for some conversations
+
 - Some very old conversations might have different data structures
 - Check the browser console for specific error messages
 - The ZIP export includes a summary file listing any failed exports
 
 ### Content Security Policy errors
+
 - Make sure you're using the latest version of the extension
 - Try reloading the extension from chrome://extensions/
 
