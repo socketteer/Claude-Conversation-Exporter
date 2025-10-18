@@ -42,5 +42,9 @@ web-ext-artifacts/
 *.tmp
 .temp/
 
+# Test coverage
+coverage/
+.nyc_output/
+
 # Claude
 .claude/

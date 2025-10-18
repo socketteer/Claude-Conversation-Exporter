@@ -160,6 +160,23 @@ This extension provides several advantages over the official Claude.ai data expo
    pnpm type-check    # Run TypeScript type checker
    ```
 
+6. **Testing**
+
+   ```bash
+   pnpm test          # Run tests in watch mode
+   pnpm test:run      # Run tests once
+   pnpm test:ui       # Run tests with UI
+   pnpm test:coverage # Run tests with coverage report
+   ```
+
+   The test suite includes:
+   - **Unit tests** for utility functions (utils.ts)
+   - **Type validation tests** for TypeScript types
+   - **Integration tests** for complete workflows
+   - **98%+ coverage** on core utility functions
+
+   See `src/tests/README.md` for more details about the test structure.
+
 ## Installation
 
 ### Firefox

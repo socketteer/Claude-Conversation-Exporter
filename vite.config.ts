@@ -40,5 +40,23 @@ export default defineConfig(({ mode }) => {
         },
       },
     },
+    test: {
+      globals: true,
+      environment: 'happy-dom',
+      setupFiles: ['./src/tests/setup.ts'],
+      include: ['src/tests/**/*.test.ts'],
+      coverage: {
+        provider: 'v8',
+        reporter: ['text', 'json', 'html'],
+        exclude: [
+          'node_modules/',
+          'dist/',
+          'src/tests/',
+          '**/*.d.ts',
+          '**/*.config.*',
+          '**/mockData',
+        ],
+      },
+    },
   };
 });

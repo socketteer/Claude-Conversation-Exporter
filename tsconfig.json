@@ -42,10 +42,11 @@
     },
 
     /* Browser Extension Types */
-    "types": ["firefox-webext-browser"]
+    "types": ["firefox-webext-browser", "vitest/globals"]
   },
   "include": [
-    "src/**/*.ts"
+    "src/**/*.ts",
+    "vite.config.ts"
   ],
   "exclude": [
     "node_modules",
