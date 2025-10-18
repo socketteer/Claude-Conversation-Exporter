@@ -1,0 +1,121 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <style>
+      body {
+        width: 350px;
+        padding: 8px;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        margin: 0;
+      }
+      h2 {
+        margin-top: 0;
+        color: #333;
+        font-size: 18px;
+      }
+      button {
+        width: 100%;
+        padding: 10px;
+        margin: 5px 0;
+        border: none;
+        border-radius: 5px;
+        background: #5436da;
+        color: white;
+        font-size: 14px;
+        cursor: pointer;
+        transition: background 0.2s;
+      }
+      button:hover {
+        background: #4329b8;
+      }
+      button:disabled {
+        background: #ccc;
+        cursor: not-allowed;
+      }
+      #browseConversations {
+        background: #28a745;
+        margin-top: 10px;
+      }
+      #browseConversations:hover {
+        background: #218838;
+      }
+      .status {
+        margin: 10px 0;
+        padding: 10px;
+        border-radius: 5px;
+        font-size: 13px;
+      }
+      .success {
+        background: #d4edda;
+        color: #155724;
+      }
+      .error {
+        background: #f8d7da;
+        color: #721c24;
+      }
+      .info {
+        background: #d1ecf1;
+        color: #0c5460;
+      }
+      .options {
+        margin: 15px 0;
+      }
+      label {
+        display: block;
+        margin: 8px 0;
+        font-size: 13px;
+      }
+      input[type='checkbox'] {
+        margin-right: 5px;
+      }
+      select {
+        width: 100%;
+        padding: 5px;
+        margin-top: 5px;
+        border: 1px solid #ddd;
+        border-radius: 3px;
+      }
+    </style>
+  </head>
+  <body>
+    <div style="margin: -8px -8px 15px -8px">
+      <img
+        src="popup-header.png"
+        alt="Claude Conversation Exporter"
+        style="width: 100%; height: auto; display: block"
+      />
+    </div>
+
+    <div style="padding: 0 7px">
+      <div id="setupNotice" class="status info" style="display: none">
+        ⚠️ Organization ID not configured.
+        <a href="#" id="openOptions">Click here to set it up</a>
+      </div>
+
+      <div class="options">
+        <label>
+          Export format:
+          <select id="format">
+            <option value="json">JSON (Full Data)</option>
+            <option value="markdown">Markdown</option>
+            <option value="text">Plain Text</option>
+          </select>
+        </label>
+
+        <label>
+          <input type="checkbox" id="includeMetadata" checked />
+          Include metadata (timestamps, model, etc.)
+        </label>
+      </div>
+
+      <button id="exportCurrent">Export Current Conversation</button>
+      <button id="exportAll">Export All Conversations</button>
+      <button id="browseConversations">Browse All Conversations</button>
+
+      <div id="status"></div>
+    </div>
+
+    <script type="module" src="popup.ts"></script>
+  </body>
+</html>

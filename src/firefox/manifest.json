@@ -1,0 +1,49 @@
+{
+  "manifest_version": 2,
+  "name": "Claude Conversation Exporter",
+  "version": "1.0.0",
+  "description": "Export your Claude.ai conversations with full message history",
+
+  "browser_specific_settings": {
+    "gecko": {
+      "id": "claude-exporter@anthropic.community",
+      "strict_min_version": "109.0"
+    }
+  },
+
+  "permissions": ["activeTab", "storage", "tabs", "https://claude.ai/*"],
+
+  "browser_action": {
+    "default_popup": "src/popup.html",
+    "default_icon": {
+      "16": "src/icon16.png",
+      "48": "src/icon48.png",
+      "128": "src/icon128.png"
+    }
+  },
+
+  "content_scripts": [
+    {
+      "matches": ["https://claude.ai/*"],
+      "js": ["src/content.ts"],
+      "css": ["src/content-styles.css"]
+    }
+  ],
+
+  "background": {
+    "scripts": ["src/background.ts"]
+  },
+
+  "icons": {
+    "16": "src/icon16.png",
+    "48": "src/icon48.png",
+    "128": "src/icon128.png"
+  },
+
+  "options_ui": {
+    "page": "src/options.html",
+    "open_in_tab": true
+  },
+
+  "web_accessible_resources": ["src/browse.html"]
+}

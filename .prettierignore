@@ -1,0 +1,29 @@
+# Dependencies
+node_modules/
+.pnpm-store/
+
+# Build outputs
+dist/
+*.js.map
+*.d.ts
+
+# Artifacts
+web-ext-artifacts/
+
+# Lock files
+pnpm-lock.yaml
+package-lock.json
+
+# Git
+.git/
+
+# IDE
+.vscode/
+.idea/
+
+# Generated or minified files
+*.min.js
+*.min.css
+
+# Logs
+*.log

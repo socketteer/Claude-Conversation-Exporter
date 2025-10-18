@@ -1,0 +1,54 @@
+{
+  "name": "claude-conversation-exporter",
+  "version": "1.0.0",
+  "description": "Export your Claude.ai conversations in various formats - Chrome and Firefox extension with TypeScript support",
+  "type": "module",
+  "scripts": {
+    "build": "tsc && vite build",
+    "build:firefox": "tsc && vite build --mode firefox",
+    "build:chrome": "tsc && vite build --mode chrome",
+    "dev": "vite build --watch",
+    "dev:firefox": "vite build --mode firefox --watch",
+    "dev:chrome": "vite build --mode chrome --watch",
+    "type-check": "tsc --noEmit",
+    "lint": "eslint src/**/*.ts",
+    "lint:fix": "eslint src/**/*.ts --fix",
+    "format": "prettier --check \"src/**/*.{ts,html,css,json}\"",
+    "format:fix": "prettier --write \"src/**/*.{ts,html,css,json}\"",
+    "check": "pnpm type-check && pnpm lint && pnpm format",
+    "firefox:run": "web-ext run --source-dir=dist/firefox --start-url https://claude.ai",
+    "chrome:run": "echo 'Load dist/chrome in chrome://extensions with Developer Mode enabled'",
+    "clean": "rm -rf dist"
+  },
+  "keywords": [
+    "claude",
+    "anthropic",
+    "export",
+    "browser-extension",
+    "firefox",
+    "chrome",
+    "typescript"
+  ],
+  "author": "",
+  "license": "MIT",
+  "packageManager": "pnpm@10.18.1",
+  "devDependencies": {
+    "@eslint/js": "^9.38.0",
+    "@samrum/vite-plugin-web-extension": "^5.1.1",
+    "@types/firefox-webext-browser": "^143.0.0",
+    "@types/jszip": "^3.4.1",
+    "@typescript-eslint/eslint-plugin": "^8.46.1",
+    "@typescript-eslint/parser": "^8.46.1",
+    "eslint": "^9.38.0",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-prettier": "^5.5.4",
+    "prettier": "^3.6.2",
+    "typescript": "^5.9.3",
+    "typescript-eslint": "^8.46.1",
+    "vite": "^7.1.10",
+    "web-ext": "^9.0.0"
+  },
+  "dependencies": {
+    "jszip": "^3.10.1"
+  }
+}

@@ -1,6 +1,35 @@
 # Claude Conversation Exporter
 
-A Chrome extension that allows you to export your Claude.ai conversations in various formats (JSON, Markdown, Plain Text) with support for bulk exports and conversation browsing.
+A browser extension for Chrome and Firefox that allows you to export your Claude.ai conversations in various formats (JSON, Markdown, Plain Text) with support for bulk exports and conversation browsing.
+
+**Built with TypeScript** - Both Chrome and Firefox versions are compiled from the same TypeScript codebase with strict type checking enabled.
+
+**Firefox Version**: Uses Firefox MV2 manifest with `browser.*` Promise-based APIs
+**Chrome Version**: Uses Chrome MV3 manifest with service workers
+
+Both versions share 100% of the TypeScript source code, differing only in their manifest configurations and build targets.
+
+## Project Structure
+
+```
+/
+├── README.md                  # This file
+├── package.json               # pnpm workspace configuration
+├── tsconfig.json             # TypeScript configuration (strict mode)
+├── vite.config.ts            # Vite build configuration
+├── src/                      # Shared source code
+│   ├── chrome/              # Chrome-specific files
+│   │   └── manifest.json   # Chrome MV3 manifest
+│   ├── firefox/             # Firefox-specific files
+│   │   └── manifest.json   # Firefox MV2 manifest
+│   ├── *.ts                 # TypeScript source files
+│   ├── *.html               # HTML pages
+│   ├── *.css                # Stylesheets
+│   └── *.png                # Icons and images
+└── dist/                     # Build output (generated)
+    ├── chrome/              # Built Chrome extension
+    └── firefox/             # Built Firefox extension
+```
 
 ## Features
 
@@ -64,40 +93,83 @@ This extension provides several advantages over the official Claude.ai data expo
 
 6. **Better Organization**: Conversations are exported with meaningful filenames and can be bulk exported into organized ZIP files.
 
-## Installation from Source
+## Development Setup
 
 ### Prerequisites
-- Google Chrome browser (or Chromium-based browser)
+- Node.js 18+ and pnpm
+- Chrome or Firefox browser
 - A Claude.ai account
 
-### Steps
+### Build from Source
 
-1. **Download or Clone the Repository**
+1. **Clone the Repository**
    ```bash
    git clone [repository-url]
-   # Or download and extract the ZIP file
+   cd Claude-Conversation-Exporter-Firefox-TS
    ```
 
-2. **Open Chrome Extensions Page**
-   - Navigate to `chrome://extensions/`
-   - Or click the three dots menu → More Tools → Extensions
+2. **Install Dependencies**
+   ```bash
+   pnpm install
+   ```
 
-3. **Enable Developer Mode**
-   - Toggle the "Developer mode" switch in the top right corner
+3. **Build the Extension**
 
-4. **Load the Extension**
-   - Click "Load unpacked"
-   - Select the `claude-exporter` folder
-   - The extension icon should appear in your toolbar
+   For Firefox (TypeScript):
+   ```bash
+   pnpm build:firefox
+   # Output: dist/firefox/
+   ```
 
-5. **Configure Your Organization ID**
-   - Click the extension icon
-   - You'll see a notice about configuring your Organization ID
-   - Click "Click here to set it up" or right-click the extension icon → Options
-   - Go to `https://claude.ai/settings/account`
-   - Copy your Organization ID
-   - Paste it in the extension options and click Save
-   - Click "Test Connection" to verify it works
+   For Chrome (TypeScript):
+   ```bash
+   pnpm build:chrome
+   # Output: dist/chrome/
+   ```
+
+   Build both:
+   ```bash
+   pnpm build
+   ```
+
+4. **Development Mode** (auto-rebuild on changes)
+   ```bash
+   pnpm dev:firefox   # Watch mode for Firefox
+   pnpm dev:chrome    # Watch mode for Chrome
+   ```
+
+5. **Type Checking**
+   ```bash
+   pnpm type-check    # Run TypeScript type checker
+   ```
+
+## Installation
+
+### Firefox
+
+1. Build the extension (see Development Setup above)
+2. Open Firefox and navigate to `about:debugging`
+3. Click "This Firefox" → "Load Temporary Add-on"
+4. Select any file in `dist/firefox/` directory
+5. Or use `pnpm firefox:run` to launch Firefox with the extension loaded
+
+### Chrome
+
+1. Build the extension (see Development Setup above)
+2. Navigate to `chrome://extensions/`
+3. Enable "Developer mode" (toggle in top right)
+4. Click "Load unpacked"
+5. Select the `dist/chrome/` directory
+
+### Configure Your Organization ID
+
+After installation (either browser):
+1. Click the extension icon
+2. Click "Click here to set it up" or access Options
+3. Go to `https://claude.ai/settings/account`
+4. Copy your Organization ID (UUID format)
+5. Paste it in the extension options and click Save
+6. Click "Test Connection" to verify
 
 ## Usage
 
