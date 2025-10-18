@@ -14,7 +14,10 @@ function getTargetFromMode(mode: string): 'firefox' | 'chrome' {
 export default defineConfig(({ mode }) => {
   const target = getTargetFromMode(mode);
   const manifestPath = resolve(__dirname, `src/${target}/manifest.json`);
-  const manifest = JSON.parse(readFileSync(manifestPath, 'utf-8'));
+  const manifest = JSON.parse(readFileSync(manifestPath, 'utf-8')) as Record<
+    string,
+    unknown
+  >;
 
   return {
     plugins: [

@@ -5,12 +5,7 @@ import prettier from 'eslint-plugin-prettier/recommended';
 export default tseslint.config(
   // Ignore build outputs and dependencies
   {
-    ignores: [
-      'dist/**',
-      'node_modules/**',
-      '*.js.map',
-      'web-ext-artifacts/**',
-    ],
+    ignores: ['dist/**', 'node_modules/**', '*.js.map', 'web-ext-artifacts/**'],
   },
 
   // Base JavaScript recommended rules
@@ -24,7 +19,9 @@ export default tseslint.config(
   {
     languageOptions: {
       parserOptions: {
-        projectService: true,
+        projectService: {
+          allowDefaultProject: ['*.js', '*.mjs'],
+        },
         tsconfigRootDir: import.meta.dirname,
       },
     },
@@ -54,16 +51,6 @@ export default tseslint.config(
 
       // Enforce consistent return
       'consistent-return': 'off', // TypeScript handles this
-
-      // Allow empty catch blocks with comment
-      '@typescript-eslint/no-unused-vars': [
-        'error',
-        {
-          argsIgnorePattern: '^_',
-          varsIgnorePattern: '^_',
-          caughtErrorsIgnorePattern: '^_',
-        },
-      ],
 
       // Browser extension specific
       '@typescript-eslint/no-misused-promises': [

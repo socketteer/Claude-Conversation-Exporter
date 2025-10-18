@@ -46,7 +46,8 @@
   },
   "include": [
     "src/**/*.ts",
-    "vite.config.ts"
+    "vite.config.ts",
+    "eslint.config.js"
   ],
   "exclude": [
     "node_modules",
