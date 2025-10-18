@@ -26,7 +26,8 @@
     {
       "matches": ["https://claude.ai/*"],
       "js": ["src/content.ts"],
-      "css": ["src/content-styles.css"]
+      "css": ["src/content-styles.css"],
+      "run_at": "document_end"
     }
   ],
 

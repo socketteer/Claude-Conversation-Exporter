@@ -60,17 +60,20 @@ function getElement<T extends HTMLElement>(id: string): T | null {
  * Load organization ID from storage
  */
 async function loadOrgId(): Promise<void> {
+  console.log('[Browse] Loading org ID...');
   try {
     const result = await browser.storage.sync.get(['organizationId']);
     state.orgId = (result['organizationId'] as string) || null;
+    console.log('[Browse] Org ID loaded:', state.orgId);
 
     if (!state.orgId) {
+      console.warn('[Browse] No org ID configured');
       showError(
         'Organization ID not configured. Please configure it in the extension options.'
       );
     }
   } catch (error) {
-    console.error('Error loading org ID:', error);
+    console.error('[Browse] Error loading org ID:', error);
   }
 }
 
@@ -78,9 +81,14 @@ async function loadOrgId(): Promise<void> {
  * Load all conversations from Claude API
  */
 async function loadConversations(): Promise<void> {
-  if (!state.orgId) return;
+  console.log('[Browse] loadConversations called, orgId:', state.orgId);
+  if (!state.orgId) {
+    console.warn('[Browse] No org ID, skipping conversation load');
+    return;
+  }
 
   try {
+    console.log('[Browse] Fetching conversations from API...');
     const response = await fetch(
       `https://claude.ai/api/organizations/${state.orgId}/chat_conversations`,
       {
@@ -91,12 +99,13 @@ async function loadConversations(): Promise<void> {
       }
     );
 
+    console.log('[Browse] API response status:', response.status);
     if (!response.ok) {
       throw new Error(`Failed to load conversations: ${response.status}`);
     }
 
     const conversations = (await response.json()) as ConversationListItem[];
-    console.log(`Loaded ${conversations.length} conversations`);
+    console.log(`[Browse] Loaded ${conversations.length} conversations`);
 
     // Infer models for conversations with null model
     state.allConversations = conversations.map((conv) => ({
@@ -226,13 +235,27 @@ function sortConversations(): void {
  * Display conversations in table
  */
 function displayConversations(): void {
+  console.log(
+    '[Browse] displayConversations called, filtered count:',
+    state.filteredConversations.length
+  );
   const tableContent = getElement('tableContent');
-  if (!tableContent) return;
+  if (!tableContent) {
+    console.error('[Browse] tableContent element not found!');
+    return;
+  }
 
   if (state.filteredConversations.length === 0) {
+    console.log('[Browse] No conversations to display');
     tableContent.innerHTML = '<div class="no-results">No conversations found</div>';
     return;
   }
+
+  console.log(
+    '[Browse] Rendering table with',
+    state.filteredConversations.length,
+    'conversations'
+  );
 
   let html = `
     <table>
@@ -642,17 +665,24 @@ function setupEventListeners(): void {
   // Export all button
   const exportAllBtn = getElement('exportAllBtn');
   exportAllBtn?.addEventListener('click', () => {
-    void exportAllFiltered;
+    void exportAllFiltered();
   });
 }
 
 /**
  * Initialize on page load
  */
+console.log('[Browse] Script loaded, waiting for DOMContentLoaded...');
 document.addEventListener('DOMContentLoaded', () => {
+  console.log('[Browse] DOMContentLoaded fired, initializing...');
   void (async () => {
-    await loadOrgId();
-    await loadConversations();
-    setupEventListeners();
+    try {
+      await loadOrgId();
+      await loadConversations();
+      setupEventListeners();
+      console.log('[Browse] Initialization complete');
+    } catch (error) {
+      console.error('[Browse] Initialization error:', error);
+    }
   })();
 });

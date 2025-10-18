@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "build": "tsc && vite build",
-    "build:firefox": "tsc && vite build --mode firefox",
+    "build:firefox": "bash build-firefox.sh",
     "build:chrome": "tsc && vite build --mode chrome",
     "dev": "vite build --watch",
     "dev:firefox": "vite build --mode firefox --watch",

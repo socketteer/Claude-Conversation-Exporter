@@ -107,7 +107,7 @@ async function handleExportCurrent(): Promise<void> {
 
     if (!conversationId) {
       throw new Error(
-        'Could not detect conversation ID. Make sure you are on a Claude.ai conversation page.'
+        'Could not detect a conversation ID. Make sure you are on a Claude.ai conversation page.'
       );
     }
 
@@ -126,20 +126,31 @@ async function handleExportCurrent(): Promise<void> {
     const formatSelect = getElement<HTMLSelectElement>('format');
     const metadataCheck = getElement<HTMLInputElement>('includeMetadata');
 
-    const response = (await browser.tabs.sendMessage(tab.id, {
-      action: 'exportConversation',
-      conversationId,
-      orgId,
-      format: formatSelect?.value ?? 'json',
-      includeMetadata: metadataCheck?.checked ?? true,
-    })) as ExtensionResponse;
+    try {
+      const response = (await browser.tabs.sendMessage(tab.id, {
+        action: 'exportConversation',
+        conversationId,
+        orgId,
+        format: formatSelect?.value ?? 'json',
+        includeMetadata: metadataCheck?.checked ?? true,
+      })) as ExtensionResponse;
 
-    if (response?.success) {
-      showStatus('Conversation exported successfully!', 'success');
-    } else {
-      const errorMsg = response?.error ?? 'Export failed';
-      console.error('Export failed:', errorMsg, response?.details);
-      showStatus(errorMsg, 'error');
+      if (response?.success) {
+        showStatus('Conversation exported successfully!', 'success');
+      } else {
+        const errorMsg = response?.error ?? 'Export failed';
+        console.error('Export failed:', errorMsg, response?.details);
+        showStatus(errorMsg, 'error');
+      }
+    } catch (sendError) {
+      // Handle "Could not establish connection" error
+      const errorMsg = sendError instanceof Error ? sendError.message : String(sendError);
+      if (errorMsg.includes('connection') || errorMsg.includes('Receiving end')) {
+        throw new Error(
+          'Cannot connect to page. Please ensure you are on a Claude.ai conversation page (https://claude.ai/chat/...) and refresh if needed.'
+        );
+      }
+      throw sendError;
     }
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unknown error occurred';
@@ -153,7 +164,7 @@ async function handleExportCurrent(): Promise<void> {
  * Handle browse conversations button
  */
 function handleBrowseConversations(): void {
-  void browser.tabs.create({ url: browser.runtime.getURL('browse.html') });
+  void browser.tabs.create({ url: browser.runtime.getURL('src/browse.html') });
 }
 
 /**
@@ -178,30 +189,48 @@ async function handleExportAll(): Promise<void> {
     const tabs = await browser.tabs.query({ active: true, currentWindow: true });
     const tab = tabs[0];
 
-    if (!tab?.id) {
+    // Check if we're on Claude.ai
+    if (!tab?.url?.includes('claude.ai')) {
+      throw new Error(
+        'Please navigate to a Claude.ai page first, or use "Browse All Conversations" instead.'
+      );
+    }
+
+    if (!tab.id) {
       throw new Error('Could not identify active tab.');
     }
 
     const formatSelect = getElement<HTMLSelectElement>('format');
     const metadataCheck = getElement<HTMLInputElement>('includeMetadata');
 
-    const response = (await browser.tabs.sendMessage(tab.id, {
-      action: 'exportAllConversations',
-      orgId,
-      format: formatSelect?.value ?? 'json',
-      includeMetadata: metadataCheck?.checked ?? true,
-    })) as ExtensionResponse;
+    try {
+      const response = (await browser.tabs.sendMessage(tab.id, {
+        action: 'exportAllConversations',
+        orgId,
+        format: formatSelect?.value ?? 'json',
+        includeMetadata: metadataCheck?.checked ?? true,
+      })) as ExtensionResponse;
 
-    if (response?.success) {
-      if (response.warnings) {
-        showStatus(response.warnings, 'info');
+      if (response?.success) {
+        if (response.warnings) {
+          showStatus(response.warnings, 'info');
+        } else {
+          showStatus(`Exported ${response.count ?? 0} conversations!`, 'success');
+        }
       } else {
-        showStatus(`Exported ${response.count ?? 0} conversations!`, 'success');
+        const errorMsg = response?.error ?? 'Export failed';
+        console.error('Export failed:', errorMsg, response?.details);
+        showStatus(errorMsg, 'error');
       }
-    } else {
-      const errorMsg = response?.error ?? 'Export failed';
-      console.error('Export failed:', errorMsg, response?.details);
-      showStatus(errorMsg, 'error');
+    } catch (sendError) {
+      // Handle "Could not establish connection" error
+      const errorMsg = sendError instanceof Error ? sendError.message : String(sendError);
+      if (errorMsg.includes('connection') || errorMsg.includes('Receiving end')) {
+        throw new Error(
+          'Cannot connect to page. This feature requires a Claude.ai page (https://claude.ai/chat/... or similar). Try "Browse All Conversations" instead - it works from any tab.'
+        );
+      }
+      throw sendError;
     }
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unknown error occurred';
@@ -222,7 +251,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const browseBtn = getElement('browseConversations');
   const exportAllBtn = getElement('exportAll');
 
-  exportCurrentBtn?.addEventListener('click', () => void handleExportCurrent);
+  exportCurrentBtn?.addEventListener('click', () => void handleExportCurrent());
   browseBtn?.addEventListener('click', handleBrowseConversations);
-  exportAllBtn?.addEventListener('click', () => void handleExportAll);
+  exportAllBtn?.addEventListener('click', () => void handleExportAll());
 });

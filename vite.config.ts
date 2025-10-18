@@ -24,6 +24,10 @@ export default defineConfig(({ mode }) => {
       webExtension({
         manifest,
         useDynamicUrlWebAccessibleResources: false,
+        additionalInputs: {
+          html: ['src/browse.html'],
+          scripts: ['src/content.ts'],
+        },
       }),
     ],
     resolve: {

@@ -155,6 +155,6 @@ document.addEventListener('DOMContentLoaded', () => {
   const saveBtn = getElement('saveBtn');
   const testBtn = getElement('testBtn');
 
-  saveBtn?.addEventListener('click', () => void saveSettings);
-  testBtn?.addEventListener('click', () => void testConnection);
+  saveBtn?.addEventListener('click', () => void saveSettings());
+  testBtn?.addEventListener('click', () => void testConnection());
 });
