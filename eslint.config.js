@@ -5,7 +5,15 @@ import prettier from 'eslint-plugin-prettier/recommended';
 export default tseslint.config(
   // Ignore build outputs and dependencies
   {
-    ignores: ['dist/**', 'node_modules/**', '*.js.map', 'web-ext-artifacts/**'],
+    ignores: [
+      'dist/**',
+      'node_modules/**',
+      '*.js.map',
+      'web-ext-artifacts/**',
+      // Browser-specific scripts are compiled separately by Vite
+      'src/chrome/scripts/**',
+      'src/firefox/scripts/**',
+    ],
   },
 
   // Base JavaScript recommended rules

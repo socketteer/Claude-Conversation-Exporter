@@ -14,7 +14,7 @@
   "permissions": ["activeTab", "storage", "tabs", "https://claude.ai/*"],
 
   "browser_action": {
-    "default_popup": "src/popup.html",
+    "default_popup": "src/firefox/scripts/popup.html",
     "default_icon": {
       "16": "src/icon16.png",
       "48": "src/icon48.png",
@@ -25,14 +25,14 @@
   "content_scripts": [
     {
       "matches": ["https://claude.ai/*"],
-      "js": ["src/content.ts"],
+      "js": ["src/firefox/scripts/content.ts"],
       "css": ["src/content-styles.css"],
       "run_at": "document_end"
     }
   ],
 
   "background": {
-    "scripts": ["src/background.ts"]
+    "scripts": ["src/firefox/scripts/background.ts"]
   },
 
   "icons": {
@@ -42,9 +42,9 @@
   },
 
   "options_ui": {
-    "page": "src/options.html",
-    "open_in_tab": true
+    "page": "src/firefox/scripts/options.html",
+    "browser_style": false
   },
 
-  "web_accessible_resources": ["src/browse.html"]
+  "web_accessible_resources": ["src/firefox/scripts/browse.html"]
 }

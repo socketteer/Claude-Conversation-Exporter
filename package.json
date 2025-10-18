@@ -6,7 +6,7 @@
   "scripts": {
     "build": "tsc && vite build",
     "build:firefox": "bash build-firefox.sh",
-    "build:chrome": "tsc && vite build --mode chrome",
+    "build:chrome": "bash build-chrome.sh",
     "dev": "vite build --watch",
     "dev:firefox": "vite build --mode firefox --watch",
     "dev:chrome": "vite build --mode chrome --watch",
@@ -39,6 +39,7 @@
   "devDependencies": {
     "@eslint/js": "^9.38.0",
     "@samrum/vite-plugin-web-extension": "^5.1.1",
+    "@types/chrome": "^0.1.24",
     "@types/firefox-webext-browser": "^143.0.0",
     "@types/jszip": "^3.4.0",
     "@typescript-eslint/eslint-plugin": "^8.46.1",

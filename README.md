@@ -195,6 +195,8 @@ This extension provides several advantages over the official Claude.ai data expo
 4. Click "Load unpacked"
 5. Select the `dist/chrome/` directory
 
+📖 **See [CHROME_INSTALL.md](./docs/CHROME_INSTALL.md) for detailed Chrome installation instructions and troubleshooting**
+
 ### Configure Your Organization ID
 
 After installation (either browser):
@@ -459,6 +461,17 @@ Be ready to explain why each permission is needed:
 - Large bulk exports may take several minutes
 - Some special content types (like artifacts) may not export perfectly
 - Rate limiting: The extension processes conversations in small batches to avoid overwhelming the API
+
+## Documentation
+
+Additional documentation is available in the [`docs/`](./docs/) folder:
+
+- **[EXPORT_OPTIONS.md](./docs/EXPORT_OPTIONS.md)** - Guide to the three different export methods
+- **[TROUBLESHOOTING.md](./docs/TROUBLESHOOTING.md)** - Step-by-step troubleshooting guide
+- **[CONTENT_SCRIPT_FIX.md](./docs/CONTENT_SCRIPT_FIX.md)** - Technical details about the content script build solution
+- **[CONNECTION_ERROR_FIX.md](./docs/CONNECTION_ERROR_FIX.md)** - Understanding and fixing connection errors
+- **[TEST_SETUP_SUMMARY.md](./docs/TEST_SETUP_SUMMARY.md)** - Test setup and coverage information
+- **[CLAUDE.md](./docs/CLAUDE.md)** - Design rationale and development notes
 
 ## Contributing
 

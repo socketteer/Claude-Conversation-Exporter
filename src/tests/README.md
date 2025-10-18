@@ -7,6 +7,8 @@ This directory contains unit and integration tests for the Claude Conversation E
 - **`utils.test.ts`** - Unit tests for utility functions (model inference, conversion, filename generation, etc.)
 - **`types.test.ts`** - Type definition validation tests
 - **`integration.test.ts`** - Integration tests for complete workflows
+- **`edgeCases.test.ts`** - Edge case and error handling tests
+- **`build.test.ts`** - Build output verification tests (checks dist files and content script)
 - **`mockData.ts`** - Shared mock data and fixtures for tests
 - **`setup.ts`** - Vitest setup and browser API mocks
 

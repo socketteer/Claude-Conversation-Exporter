@@ -18,6 +18,9 @@ importers:
       '@samrum/vite-plugin-web-extension':
         specifier: ^5.1.1
         version: 5.1.1(vite@7.1.10(@types/node@24.8.1))
+      '@types/chrome':
+        specifier: ^0.1.24
+        version: 0.1.24
       '@types/firefox-webext-browser':
         specifier: ^143.0.0
         version: 143.0.0
@@ -576,6 +579,9 @@ packages:
 
   '@types/chrome@0.0.233':
     resolution: {integrity: sha512-T3HUW8LDhHfYPbUkOZilhnqX04sZqEFIQO0OIG8byZ7PBIk2jYys1AkNg56UbtKbsh3dABmOniK+0Q3oyo7Sxg==}
+
+  '@types/chrome@0.1.24':
+    resolution: {integrity: sha512-9iO9HL2bMeGS4C8m6gNFWUyuPE5HEUFk+rGh+7oriUjg+ata4Fc9PoVlu8xvGm7yoo3AmS3J6fAjoFj61NL2rw==}
 
   '@types/deep-eql@4.0.2':
     resolution: {integrity: sha512-c9h9dVVMigMPc4bwTvC5dxqtqJZwQPePsWjPlpSOnojbor6pGqdk541lfA7AqFQr5pB1BRdq0juY9db81BwyFw==}
@@ -2769,6 +2775,11 @@ snapshots:
       '@types/deep-eql': 4.0.2
 
   '@types/chrome@0.0.233':
+    dependencies:
+      '@types/filesystem': 0.0.36
+      '@types/har-format': 1.2.16
+
+  '@types/chrome@0.1.24':
     dependencies:
       '@types/filesystem': 0.0.36
       '@types/har-format': 1.2.16

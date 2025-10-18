@@ -25,8 +25,11 @@ export default defineConfig(({ mode }) => {
         manifest,
         useDynamicUrlWebAccessibleResources: false,
         additionalInputs: {
-          html: ['src/browse.html'],
-          scripts: ['src/content.ts'],
+          html: [
+            `src/${target}/scripts/browse.html`,
+            `src/${target}/scripts/options.html`,
+          ],
+          scripts: [`src/${target}/scripts/content.ts`],
         },
       }),
     ],

@@ -47,11 +47,16 @@
   "include": [
     "src/**/*.ts",
     "vite.config.ts",
+    "vite.content.config.ts",
+    "vite.content-chrome.config.ts",
+    "vite.content-firefox.config.ts",
     "eslint.config.js"
   ],
   "exclude": [
     "node_modules",
     "dist",
-    "src/**/*.js"
+    "src/**/*.js",
+    "src/chrome/scripts/**/*",
+    "src/firefox/scripts/**/*"
   ]
 }
