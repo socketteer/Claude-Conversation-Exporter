@@ -1,5 +1,6 @@
 import { defineConfig } from 'vite';
 import webExtension from '@samrum/vite-plugin-web-extension';
+import tsconfigPaths from 'vite-tsconfig-paths';
 import { resolve, dirname } from 'path';
 import { fileURLToPath } from 'url';
 import { readFileSync } from 'fs';
@@ -21,6 +22,7 @@ export default defineConfig(({ mode }) => {
 
   return {
     plugins: [
+      tsconfigPaths(),
       webExtension({
         manifest,
         useDynamicUrlWebAccessibleResources: false,
