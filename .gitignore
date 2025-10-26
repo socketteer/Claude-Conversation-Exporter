@@ -4,6 +4,7 @@ node_modules/
 
 # Build output
 dist/
+dist-temp-content-chrome/
 *.js.map
 *.d.ts
 *.d.ts.map
