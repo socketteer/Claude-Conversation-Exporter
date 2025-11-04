@@ -312,18 +312,18 @@ async function exportConversation(conversationId, conversationName) {
     let content, filename, type;
     switch (format) {
       case 'markdown':
-        content = convertToMarkdown(data, includeMetadata);
-        filename = `claude-${conversationName || conversationId}.md`;
+        content = convertToMarkdown(data, includeMetadata, conversationId);
+        filename = `${conversationName || conversationId}.md`;
         type = 'text/markdown';
         break;
       case 'text':
         content = convertToText(data, includeMetadata);
-        filename = `claude-${conversationName || conversationId}.txt`;
+        filename = `${conversationName || conversationId}.txt`;
         type = 'text/plain';
         break;
       default:
         content = JSON.stringify(data, null, 2);
-        filename = `claude-${conversationName || conversationId}.json`;
+        filename = `${conversationName || conversationId}.json`;
         type = 'application/json';
     }
     
@@ -402,7 +402,7 @@ async function exportAllFiltered() {
           
           switch (format) {
             case 'markdown':
-              content = convertToMarkdown(data, includeMetadata);
+              content = convertToMarkdown(data, includeMetadata, conv.uuid);
               filename = `${safeName}.md`;
               break;
             case 'text':

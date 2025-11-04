@@ -99,38 +99,52 @@ function getCurrentBranch(data) {
 }
 
 // Convert to markdown format
-function convertToMarkdown(data, includeMetadata) {
+function convertToMarkdown(data, includeMetadata, conversationId = null) {
+  console.log('🔧 SOCKETTEER MODIFIED VERSION - conversationId:', conversationId);
   let markdown = `# ${data.name || 'Untitled Conversation'}\n\n`;
-  
+
   if (includeMetadata) {
     markdown += `**Created:** ${new Date(data.created_at).toLocaleString()}\n`;
     markdown += `**Updated:** ${new Date(data.updated_at).toLocaleString()}\n`;
-    markdown += `**Model:** ${data.model}\n\n`;
-    markdown += '---\n\n';
+    markdown += `**Exported:** ${new Date().toLocaleString()}\n`;
+    markdown += `**Model:** ${data.model}\n`;
+    if (conversationId) {
+      markdown += `**Link:** [https://claude.ai/chat/${conversationId}](https://claude.ai/chat/${conversationId})\n`;
+    }
+    markdown += `\n---\n\n`;
   }
   
   // Get only the current branch messages
   const branchMessages = getCurrentBranch(data);
   
   for (const message of branchMessages) {
-    const sender = message.sender === 'human' ? '**You**' : '**Claude**';
-    markdown += `${sender}:\n\n`;
-    
+    const sender = message.sender === 'human' ? '## Prompt' : '### Response';
+    markdown += `${sender}\n`;
+
+    if (includeMetadata && message.created_at) {
+      markdown += `**${new Date(message.created_at).toISOString()}**\n`;
+    }
+    markdown += `\n`;
+
     if (message.content) {
       for (const content of message.content) {
-        if (content.text) {
+        // Handle thinking blocks (extended thinking)
+        if (content.type === 'thinking' && content.thinking) {
+          // Get the summary if available
+          const summary = content.summaries && content.summaries.length > 0
+            ? content.summaries[content.summaries.length - 1].summary
+            : 'Thought process';
+
+          markdown += `#### Thinking\n\`\`\`\`plaintext\n${summary}\n\n${content.thinking}\n\`\`\`\`\n\n`;
+        }
+        // Handle regular text content
+        else if (content.text) {
           markdown += `${content.text}\n\n`;
         }
       }
     } else if (message.text) {
       markdown += `${message.text}\n\n`;
     }
-    
-    if (includeMetadata && message.created_at) {
-      markdown += `*${new Date(message.created_at).toLocaleString()}*\n\n`;
-    }
-    
-    markdown += '---\n\n';
   }
   
   return markdown;
@@ -161,7 +175,15 @@ function convertToText(data, includeMetadata) {
     let messageText = '';
     if (message.content) {
       for (const content of message.content) {
-        if (content.text) {
+        // Handle thinking blocks
+        if (content.type === 'thinking' && content.thinking) {
+          const summary = content.summaries && content.summaries.length > 0
+            ? content.summaries[content.summaries.length - 1].summary
+            : 'Thought process';
+          messageText += `[${summary}]\n${content.thinking}\n\n`;
+        }
+        // Handle regular text
+        else if (content.text) {
           messageText += content.text;
         }
       }
@@ -214,18 +236,18 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         
         switch (request.format) {
           case 'markdown':
-            content = convertToMarkdown(data, request.includeMetadata);
-            filename = `claude-conversation-${data.name || request.conversationId}.md`;
+            content = convertToMarkdown(data, request.includeMetadata, request.conversationId);
+            filename = `${data.name || request.conversationId}.md`;
             type = 'text/markdown';
             break;
           case 'text':
             content = convertToText(data, request.includeMetadata);
-            filename = `claude-conversation-${data.name || request.conversationId}.txt`;
+            filename = `${data.name || request.conversationId}.txt`;
             type = 'text/plain';
             break;
           default:
             content = JSON.stringify(data, null, 2);
-            filename = `claude-conversation-${data.name || request.conversationId}.json`;
+            filename = `${data.name || request.conversationId}.json`;
             type = 'application/json';
         }
         
@@ -254,7 +276,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         
         if (request.format === 'json') {
           // For JSON, export as a single file with all conversations
-          const filename = `claude-all-conversations-${new Date().toISOString().split('T')[0]}.json`;
+          const filename = `all-conversations-${new Date().toISOString().split('T')[0]}.json`;
           console.log('Downloading all conversations as JSON:', filename);
           downloadFile(JSON.stringify(conversations, null, 2), filename);
           sendResponse({ success: true, count: conversations.length });
@@ -274,12 +296,12 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
               let content, filename, type;
               
               if (request.format === 'markdown') {
-                content = convertToMarkdown(fullConv, request.includeMetadata);
-                filename = `claude-${conv.name || conv.uuid}.md`;
+                content = convertToMarkdown(fullConv, request.includeMetadata, conv.uuid);
+                filename = `${conv.name || conv.uuid}.md`;
                 type = 'text/markdown';
               } else {
                 content = convertToText(fullConv, request.includeMetadata);
-                filename = `claude-${conv.name || conv.uuid}.txt`;
+                filename = `${conv.name || conv.uuid}.txt`;
                 type = 'text/plain';
               }
               

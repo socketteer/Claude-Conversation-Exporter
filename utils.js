@@ -31,40 +31,54 @@ function getCurrentBranch(data) {
 }
 
 // Convert to markdown format
-function convertToMarkdown(data, includeMetadata) {
+function convertToMarkdown(data, includeMetadata, conversationId = null) {
+  console.log('🔧 UTILS.JS MODIFIED VERSION - conversationId:', conversationId);
   let markdown = `# ${data.name || 'Untitled Conversation'}\n\n`;
-  
+
   if (includeMetadata) {
     markdown += `**Created:** ${new Date(data.created_at).toLocaleString()}\n`;
     markdown += `**Updated:** ${new Date(data.updated_at).toLocaleString()}\n`;
-    markdown += `**Model:** ${data.model}\n\n`;
-    markdown += '---\n\n';
+    markdown += `**Exported:** ${new Date().toLocaleString()}\n`;
+    markdown += `**Model:** ${data.model}\n`;
+    if (conversationId) {
+      markdown += `**Link:** [https://claude.ai/chat/${conversationId}](https://claude.ai/chat/${conversationId})\n`;
+    }
+    markdown += `\n---\n\n`;
   }
-  
+
   // Get only the current branch messages
   const branchMessages = getCurrentBranch(data);
-  
+
   for (const message of branchMessages) {
-    const sender = message.sender === 'human' ? '**You**' : '**Claude**';
-    markdown += `${sender}:\n\n`;
-    
+    const sender = message.sender === 'human' ? '## Prompt' : '### Response';
+    markdown += `${sender}\n`;
+
+    if (includeMetadata && message.created_at) {
+      markdown += `**${new Date(message.created_at).toISOString()}**\n`;
+    }
+    markdown += `\n`;
+
     if (message.content) {
       for (const content of message.content) {
-        if (content.text) {
+        // Handle thinking blocks (extended thinking)
+        if (content.type === 'thinking' && content.thinking) {
+          // Get the summary if available
+          const summary = content.summaries && content.summaries.length > 0
+            ? content.summaries[content.summaries.length - 1].summary
+            : 'Thought process';
+
+          markdown += `#### Thinking\n\`\`\`\`plaintext\n${summary}\n\n${content.thinking}\n\`\`\`\`\n\n`;
+        }
+        // Handle regular text content
+        else if (content.text) {
           markdown += `${content.text}\n\n`;
         }
       }
     } else if (message.text) {
       markdown += `${message.text}\n\n`;
     }
-    
-    if (includeMetadata && message.created_at) {
-      markdown += `*${new Date(message.created_at).toLocaleString()}*\n\n`;
-    }
-    
-    markdown += '---\n\n';
   }
-  
+
   return markdown;
 }
 
