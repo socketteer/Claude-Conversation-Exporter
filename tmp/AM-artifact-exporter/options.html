@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Claude Artifact Exporter Settings</title>
+  <style>
+    body {
+      width: 600px;
+      margin: 40px auto;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      line-height: 1.6;
+      color: #333;
+    }
+    h1 {
+      color: #5436DA;
+      border-bottom: 2px solid #5436DA;
+      padding-bottom: 10px;
+    }
+    .section {
+      background: #f8f9fa;
+      padding: 20px;
+      border-radius: 8px;
+      margin: 20px 0;
+    }
+    label {
+      display: block;
+      margin-bottom: 5px;
+      font-weight: 500;
+    }
+    input[type="text"] {
+      width: 100%;
+      padding: 10px;
+      border: 1px solid #ddd;
+      border-radius: 5px;
+      font-size: 14px;
+      box-sizing: border-box;
+    }
+    input[type="text"]:focus {
+      outline: none;
+      border-color: #5436DA;
+      box-shadow: 0 0 0 2px rgba(84, 54, 218, 0.1);
+    }
+    button {
+      background: #5436DA;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 5px;
+      font-size: 14px;
+      cursor: pointer;
+      margin-top: 10px;
+    }
+    button:hover {
+      background: #4329B8;
+    }
+    .status {
+      margin-top: 10px;
+      padding: 10px;
+      border-radius: 5px;
+      display: none;
+    }
+    .status.success {
+      display: block;
+      background: #d4edda;
+      color: #155724;
+    }
+    .status.error {
+      display: block;
+      background: #f8d7da;
+      color: #721c24;
+    }
+    .instructions {
+      background: #e8f4fd;
+      border-left: 4px solid #5436DA;
+      padding: 15px;
+      margin: 20px 0;
+    }
+    .instructions h3 {
+      margin-top: 0;
+      color: #5436DA;
+    }
+    .instructions ol {
+      margin-bottom: 0;
+    }
+    .instructions code {
+      background: #fff;
+      padding: 2px 6px;
+      border-radius: 3px;
+      font-family: 'Courier New', monospace;
+      font-size: 13px;
+    }
+    .example {
+      color: #666;
+      font-size: 12px;
+      margin-top: 5px;
+      font-style: italic;
+    }
+  </style>
+</head>
+<body>
+  <h1>Claude Artifact Bulk Exporter Settings</h1>
+
+  <div class="instructions">
+    <h3>How to find your Organization ID:</h3>
+    <ol>
+      <li>Go to <a href="https://claude.ai/settings/account" target="_blank">claude.ai/settings/account</a></li>
+      <li>Copy your Organization ID (e.g., <code>xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx</code>) </li>
+      <li>Paste it below and click Save</li>
+    </ol>
+  </div>
+
+  <div class="section">
+    <label for="orgId">Organization ID:</label>
+    <input type="text" id="orgId" placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx">
+    <div class="example">This is a UUID that looks like: xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx</div>
+    <button id="saveBtn">Save Settings</button>
+    <div id="status" class="status"></div>
+  </div>
+
+  <div class="section">
+    <h3>Test Your Settings</h3>
+    <p>After saving your Organization ID, you can test if it works:</p>
+    <button id="testBtn">Test Connection</button>
+    <div id="testStatus" class="status"></div>
+  </div>
+
+  <script src="options.js"></script>
+</body>
+</html>
