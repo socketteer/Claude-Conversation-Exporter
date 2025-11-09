@@ -3,15 +3,55 @@
 <head>
   <meta charset="utf-8">
   <style>
+    :root {
+      --bg-color: #ffffff;
+      --text-color: #333333;
+      --border-color: #dddddd;
+      --primary-color: #5436DA;
+      --primary-hover: #4329B8;
+      --secondary-color: #28a745;
+      --secondary-hover: #218838;
+      --disabled-bg: #cccccc;
+      --success-bg: #d4edda;
+      --success-text: #155724;
+      --error-bg: #f8d7da;
+      --error-text: #721c24;
+      --info-bg: #d1ecf1;
+      --info-text: #0c5460;
+      --link-color: #5436DA;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg-color: #1e1e1e;
+        --text-color: #e0e0e0;
+        --border-color: #3a3a3a;
+        --primary-color: #6b52e8;
+        --primary-hover: #7d66f0;
+        --secondary-color: #32b34a;
+        --secondary-hover: #3cc752;
+        --disabled-bg: #3a3a3a;
+        --success-bg: #1a4d2e;
+        --success-text: #90ee90;
+        --error-bg: #4d1a1a;
+        --error-text: #ff9999;
+        --info-bg: #1a3d4d;
+        --info-text: #87ceeb;
+        --link-color: #8b7aff;
+      }
+    }
+
     body {
       width: 350px;
       padding: 8px;
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
       margin: 0;
+      background-color: var(--bg-color);
+      color: var(--text-color);
     }
     h2 {
       margin-top: 0;
-      color: #333;
+      color: var(--text-color);
       font-size: 18px;
     }
     button {
@@ -20,25 +60,26 @@
       margin: 5px 0;
       border: none;
       border-radius: 5px;
-      background: #5436DA;
+      background: var(--primary-color);
       color: white;
       font-size: 14px;
       cursor: pointer;
       transition: background 0.2s;
     }
     button:hover {
-      background: #4329B8;
+      background: var(--primary-hover);
     }
     button:disabled {
-      background: #ccc;
+      background: var(--disabled-bg);
       cursor: not-allowed;
+      color: #999;
     }
     #browseConversations {
-      background: #28a745;
+      background: var(--secondary-color);
       margin-top: 10px;
     }
     #browseConversations:hover {
-      background: #218838;
+      background: var(--secondary-hover);
     }
     .status {
       margin: 10px 0;
@@ -47,16 +88,19 @@
       font-size: 13px;
     }
     .success {
-      background: #d4edda;
-      color: #155724;
+      background: var(--success-bg);
+      color: var(--success-text);
     }
     .error {
-      background: #f8d7da;
-      color: #721c24;
+      background: var(--error-bg);
+      color: var(--error-text);
     }
     .info {
-      background: #d1ecf1;
-      color: #0c5460;
+      background: var(--info-bg);
+      color: var(--info-text);
+    }
+    .info a {
+      color: var(--link-color);
     }
     .options {
       margin: 15px 0;
@@ -65,6 +109,7 @@
       display: block;
       margin: 8px 0;
       font-size: 13px;
+      color: var(--text-color);
     }
     input[type="checkbox"] {
       margin-right: 5px;
@@ -73,8 +118,10 @@
       width: 100%;
       padding: 5px;
       margin-top: 5px;
-      border: 1px solid #ddd;
+      border: 1px solid var(--border-color);
       border-radius: 3px;
+      background-color: var(--bg-color);
+      color: var(--text-color);
     }
   </style>
 </head>
