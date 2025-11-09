@@ -413,10 +413,19 @@ function arrayBufferToBase64(buffer) {
   return btoa(binary);
 }
 
+// Keepalive function to prevent service worker timeout
+function keepAlive() {
+  // Ping chrome APIs to show activity
+  chrome.storage.local.get('keepalive', () => {});
+}
+
 // Main export handler
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   if (request.action === 'exportArtifacts') {
     (async () => {
+      // Set up keepalive interval (every 20 seconds)
+      const keepAliveInterval = setInterval(keepAlive, 20000);
+
       try {
         console.log('Starting bulk artifact export...');
         console.log('Organization ID:', request.orgId);
@@ -441,6 +450,12 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         for (const conv of conversations) {
           try {
             processedCount++;
+
+            // Keepalive ping every 10 conversations
+            if (processedCount % 10 === 0) {
+              keepAlive();
+              console.log(`[Keepalive ping - processed ${processedCount}/${conversations.length}]`);
+            }
 
             // Send progress update (ignore errors if popup closed)
             try {
@@ -542,6 +557,10 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
           success: false,
           error: error.message
         });
+      } finally {
+        // Always clear keepalive interval
+        clearInterval(keepAliveInterval);
+        console.log('[Keepalive interval cleared]');
       }
     })();
 
