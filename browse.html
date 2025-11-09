@@ -31,7 +31,7 @@
     }
 
     @media (prefers-color-scheme: dark) {
-      :root {
+      :root:not([data-theme="light"]) {
         --bg-body: #121212;
         --bg-card: #1e1e1e;
         --text-primary: #e0e0e0;
@@ -58,6 +58,32 @@
       }
     }
 
+    :root[data-theme="dark"] {
+      --bg-body: #121212;
+      --bg-card: #1e1e1e;
+      --text-primary: #e0e0e0;
+      --text-secondary: #b0b0b0;
+      --text-muted: #808080;
+      --border-color: #2a2a2a;
+      --border-light: #333333;
+      --primary-color: #6b52e8;
+      --primary-hover: #7d66f0;
+      --secondary-bg: #2a2a2a;
+      --hover-bg: #2a2a2a;
+      --input-border: #3a3a3a;
+      --input-focus: #8b7aff;
+      --shadow-sm: rgba(0,0,0,0.3);
+      --shadow-md: rgba(0,0,0,0.5);
+      --error-color: #ff6b6b;
+      --disabled-bg: #3a3a3a;
+      --disabled-text: #666666;
+      --toast-bg: #2a2a2a;
+      --modal-overlay: rgba(0,0,0,0.7);
+      --progress-bg: #3a3a3a;
+      --cancel-btn: #e74c3c;
+      --link-hover: #8b7aff;
+    }
+
     * {
       box-sizing: border-box;
       margin: 0;
@@ -81,9 +107,40 @@
       box-shadow: 0 2px 4px var(--shadow-sm);
     }
 
+    .header-top {
+      display: flex;
+      align-items: center;
+      gap: 15px;
+      margin-bottom: 15px;
+    }
+
     .header h1 {
       color: var(--primary-color);
-      margin-bottom: 15px;
+      margin: 0;
+      flex: 1;
+    }
+
+    .theme-toggle {
+      background: none;
+      border: none;
+      cursor: pointer;
+      padding: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--text-secondary);
+      transition: color 0.2s;
+      border-radius: 50%;
+    }
+
+    .theme-toggle:hover {
+      color: var(--primary-color);
+      background: var(--secondary-bg);
+    }
+
+    .theme-toggle svg {
+      width: 24px;
+      height: 24px;
     }
     
     .controls {
@@ -437,7 +494,25 @@
 </head>
 <body>
   <div class="header">
-    <h1>Browse Claude Conversations</h1>
+    <div class="header-top">
+      <button class="theme-toggle" id="themeToggle" aria-label="Toggle theme">
+        <svg class="sun-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <circle cx="12" cy="12" r="5" stroke-width="2"/>
+          <line x1="12" y1="1" x2="12" y2="3" stroke-width="2"/>
+          <line x1="12" y1="21" x2="12" y2="23" stroke-width="2"/>
+          <line x1="4.22" y1="4.22" x2="5.64" y2="5.64" stroke-width="2"/>
+          <line x1="18.36" y1="18.36" x2="19.78" y2="19.78" stroke-width="2"/>
+          <line x1="1" y1="12" x2="3" y2="12" stroke-width="2"/>
+          <line x1="21" y1="12" x2="23" y2="12" stroke-width="2"/>
+          <line x1="4.22" y1="19.78" x2="5.64" y2="18.36" stroke-width="2"/>
+          <line x1="18.36" y1="5.64" x2="19.78" y2="4.22" stroke-width="2"/>
+        </svg>
+        <svg class="moon-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="display: none;">
+          <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" stroke-width="2"/>
+        </svg>
+      </button>
+      <h1>Browse Claude Conversations</h1>
+    </div>
     <div class="controls">
       <div class="search-box" id="searchBox">
         <input type="text" id="searchInput" placeholder="Search conversations by name...">
