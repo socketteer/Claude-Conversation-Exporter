@@ -54,13 +54,13 @@ let selectedConversations = new Set(); // Track selected conversation IDs
 
 // Model name mappings
 const MODEL_DISPLAY_NAMES = {
-  'claude-3-sonnet-20240229': 'Claude 3 Sonnet',
-  'claude-3-opus-20240229': 'Claude 3 Opus',
-  'claude-3-haiku-20240307': 'Claude 3 Haiku',
-  'claude-3-5-sonnet-20240620': 'Claude 3.5 Sonnet',
-  'claude-3-5-haiku-20241022': 'Claude 3.5 Haiku',
-  'claude-3-5-sonnet-20241022': 'Claude 3.6 Sonnet',
-  'claude-3-7-sonnet-20250219': 'Claude 3.7 Sonnet',
+  'claude-3-sonnet-20240229': 'Claude Sonnet 3',
+  'claude-3-opus-20240229': 'Claude Opus 3',
+  'claude-3-haiku-20240307': 'Claude Haiku 3',
+  'claude-3-5-sonnet-20240620': 'Claude Sonnet 3.5',
+  'claude-3-5-haiku-20241022': 'Claude Haiku 3.5',
+  'claude-3-5-sonnet-20241022': 'Claude Sonnet 3.6',
+  'claude-3-7-sonnet-20250219': 'Claude Sonnet 3.7',
   'claude-sonnet-4-20250514': 'Claude Sonnet 4',
   'claude-opus-4-20250514': 'Claude Opus 4',
   'claude-opus-4-1-20250805': 'Claude Opus 4.1',
