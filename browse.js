@@ -581,19 +581,7 @@ async function exportAllFiltered() {
       showToast('Export cancelled', true);
       return;
     }
-    
-    // Add a summary file
-    const summary = {
-      export_date: new Date().toISOString(),
-      total_conversations: total,
-      successful_exports: completed,
-      failed_exports: failed,
-      failed_conversations: failedConversations,
-      format: format,
-      include_metadata: includeMetadata
-    };
-    zip.file('export_summary.json', JSON.stringify(summary, null, 2));
-    
+
     // Generate and download the ZIP file
     progressText.textContent = 'Creating ZIP file...';
     const blob = await zip.generateAsync({
