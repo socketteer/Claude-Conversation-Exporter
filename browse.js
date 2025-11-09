@@ -259,7 +259,7 @@ function displayConversations() {
           <th>Model</th>
           <th>Actions</th>
           <th class="checkbox-col">
-            <input type="checkbox" id="selectAll" class="select-all-checkbox" ${selectedConversations.size === filteredConversations.length && filteredConversations.length > 0 ? 'checked' : ''}>
+            <input type="checkbox" id="selectAll" class="select-all-checkbox" ${selectedConversations.size > 0 ? 'checked' : ''}>
           </th>
         </tr>
       </thead>
@@ -384,10 +384,8 @@ function updateSelectAllCheckbox() {
   const selectAllCheckbox = document.getElementById('selectAll');
   if (!selectAllCheckbox) return;
 
-  const visibleIds = filteredConversations.map(c => c.uuid);
-  const allVisibleSelected = visibleIds.length > 0 && visibleIds.every(id => selectedConversations.has(id));
-
-  selectAllCheckbox.checked = allVisibleSelected;
+  // Show header checkbox as checked when any conversations are selected
+  selectAllCheckbox.checked = selectedConversations.size > 0;
 }
 
 // Update export button text based on selection
