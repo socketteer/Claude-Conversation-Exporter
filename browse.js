@@ -49,6 +49,7 @@ let allConversations = [];
 let filteredConversations = [];
 let orgId = null;
 let currentSort = 'updated_desc';
+let sortStack = []; // Track multi-level sorting: [{field: 'name', direction: 'asc'}, ...]
 let selectedConversations = new Set(); // Track selected conversation IDs
 
 // Model name mappings
@@ -210,52 +211,93 @@ function applyFiltersAndSort() {
 
 // Sort conversations based on current sort setting
 function sortConversations() {
-  const [field, direction] = currentSort.split('_');
-  
+  // If sortStack is empty, use currentSort from dropdown
+  if (sortStack.length === 0) {
+    const [field, direction] = currentSort.split('_');
+    sortStack = [{field, direction}];
+  }
+
   filteredConversations.sort((a, b) => {
-    let aVal, bVal;
-    
-    switch (field) {
-      case 'name':
-        aVal = a.name.toLowerCase();
-        bVal = b.name.toLowerCase();
-        break;
-      case 'created':
-        aVal = new Date(a.created_at);
-        bVal = new Date(b.created_at);
-        break;
-      case 'updated':
-        aVal = new Date(a.updated_at);
-        bVal = new Date(b.updated_at);
-        break;
-      default:
-        return 0;
+    // Try each sort criterion in order until we find a difference
+    for (const {field, direction} of sortStack) {
+      let aVal, bVal;
+
+      switch (field) {
+        case 'name':
+          aVal = a.name.toLowerCase();
+          bVal = b.name.toLowerCase();
+          break;
+        case 'created':
+          aVal = new Date(a.created_at);
+          bVal = new Date(b.created_at);
+          break;
+        case 'updated':
+          aVal = new Date(a.updated_at);
+          bVal = new Date(b.updated_at);
+          break;
+        default:
+          continue;
+      }
+
+      let comparison = 0;
+      if (aVal > bVal) comparison = 1;
+      else if (aVal < bVal) comparison = -1;
+
+      if (comparison !== 0) {
+        return direction === 'asc' ? comparison : -comparison;
+      }
     }
-    
-    if (direction === 'asc') {
-      return aVal > bVal ? 1 : -1;
-    } else {
-      return aVal < bVal ? 1 : -1;
-    }
+    return 0;
   });
+}
+
+// Handle column header click for sorting
+function handleColumnSort(field) {
+  const existingIndex = sortStack.findIndex(s => s.field === field);
+
+  if (existingIndex === 0) {
+    // Clicking primary sort: toggle direction
+    sortStack[0].direction = sortStack[0].direction === 'asc' ? 'desc' : 'asc';
+  } else if (existingIndex > 0) {
+    // Clicking a secondary sort: move it to primary position
+    const [sortCriterion] = sortStack.splice(existingIndex, 1);
+    sortStack.unshift(sortCriterion);
+  } else {
+    // New sort: add to front with ascending direction
+    sortStack.unshift({field, direction: 'asc'});
+  }
+
+  applyFiltersAndSort();
+}
+
+// Get sort indicator for a column
+function getSortIndicator(field) {
+  const sortIndex = sortStack.findIndex(s => s.field === field);
+  if (sortIndex === -1) return '';
+
+  const {direction} = sortStack[sortIndex];
+  const arrow = direction === 'asc' ? '↑' : '↓';
+  const priority = sortStack.length > 1 ? `<sub>${sortIndex + 1}</sub>` : '';
+
+  return ` <span class="sort-indicator">${arrow}${priority}</span>`;
 }
 
 // Display conversations in table
 function displayConversations() {
   const tableContent = document.getElementById('tableContent');
-  
+
   if (filteredConversations.length === 0) {
     tableContent.innerHTML = '<div class="no-results">No conversations found</div>';
     return;
   }
-  
+
   let html = `
     <table>
       <thead>
         <tr>
-          <th class="sortable" data-sort="name">Name</th>
-          <th class="sortable" data-sort="updated">Last Updated</th>
-          <th class="sortable" data-sort="created">Created</th>
+          <th class="sortable" data-sort="name">Name${getSortIndicator('name')}</th>
+          <th class="sortable" data-sort="updated">Last Updated${getSortIndicator('updated')}</th>
+          <th class="sortable" data-sort="created">Created${getSortIndicator('created')}</th>
           <th>Model</th>
           <th>Actions</th>
           <th class="checkbox-col">
@@ -336,6 +378,13 @@ function displayConversations() {
   if (selectAllCheckbox) {
     selectAllCheckbox.addEventListener('change', handleSelectAll);
   }
+
+  // Add sortable header click listeners
+  document.querySelectorAll('.sortable').forEach(header => {
+    header.addEventListener('click', () => {
+      handleColumnSort(header.dataset.sort);
+    });
+  });
 
   // Update export button text
   updateExportButtonText();
