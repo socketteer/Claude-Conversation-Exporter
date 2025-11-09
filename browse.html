@@ -4,31 +4,85 @@
   <meta charset="utf-8">
   <title>Browse Claude Conversations</title>
   <style>
+    :root {
+      --bg-body: #f5f5f5;
+      --bg-card: #ffffff;
+      --text-primary: #333333;
+      --text-secondary: #666666;
+      --text-muted: #999999;
+      --border-color: #e0e0e0;
+      --border-light: #f0f0f0;
+      --primary-color: #5436DA;
+      --primary-hover: #4329B8;
+      --secondary-bg: #f8f9fa;
+      --hover-bg: #f8f9fa;
+      --input-border: #dddddd;
+      --input-focus: #5436DA;
+      --shadow-sm: rgba(0,0,0,0.05);
+      --shadow-md: rgba(0,0,0,0.15);
+      --error-color: #d32f2f;
+      --disabled-bg: #cccccc;
+      --disabled-text: #999999;
+      --toast-bg: #333333;
+      --modal-overlay: rgba(0,0,0,0.5);
+      --progress-bg: #e0e0e0;
+      --cancel-btn: #dc3545;
+      --link-hover: #5436DA;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg-body: #121212;
+        --bg-card: #1e1e1e;
+        --text-primary: #e0e0e0;
+        --text-secondary: #b0b0b0;
+        --text-muted: #808080;
+        --border-color: #2a2a2a;
+        --border-light: #333333;
+        --primary-color: #6b52e8;
+        --primary-hover: #7d66f0;
+        --secondary-bg: #2a2a2a;
+        --hover-bg: #2a2a2a;
+        --input-border: #3a3a3a;
+        --input-focus: #8b7aff;
+        --shadow-sm: rgba(0,0,0,0.3);
+        --shadow-md: rgba(0,0,0,0.5);
+        --error-color: #ff6b6b;
+        --disabled-bg: #3a3a3a;
+        --disabled-text: #666666;
+        --toast-bg: #2a2a2a;
+        --modal-overlay: rgba(0,0,0,0.7);
+        --progress-bg: #3a3a3a;
+        --cancel-btn: #e74c3c;
+        --link-hover: #8b7aff;
+      }
+    }
+
     * {
       box-sizing: border-box;
       margin: 0;
       padding: 0;
     }
-    
+
     body {
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-      background: #f5f5f5;
-      color: #333;
+      background: var(--bg-body);
+      color: var(--text-primary);
       line-height: 1.6;
     }
     
     .header {
-      background: white;
-      border-bottom: 1px solid #e0e0e0;
+      background: var(--bg-card);
+      border-bottom: 1px solid var(--border-color);
       padding: 20px;
       position: sticky;
       top: 0;
       z-index: 100;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+      box-shadow: 0 2px 4px var(--shadow-sm);
     }
-    
+
     .header h1 {
-      color: #5436DA;
+      color: var(--primary-color);
       margin-bottom: 15px;
     }
     
@@ -48,18 +102,20 @@
     .search-box input {
       width: 100%;
       padding: 10px 40px 10px 15px;
-      border: 1px solid #ddd;
+      border: 1px solid var(--input-border);
       border-radius: 25px;
       font-size: 14px;
       transition: border-color 0.2s;
+      background-color: var(--bg-card);
+      color: var(--text-primary);
     }
-    
+
     .search-box input:focus {
       outline: none;
-      border-color: #5436DA;
-      box-shadow: 0 0 0 3px rgba(84, 54, 218, 0.1);
+      border-color: var(--input-focus);
+      box-shadow: 0 0 0 3px rgba(107, 82, 232, 0.15);
     }
-    
+
     .search-box .clear-btn {
       position: absolute;
       right: 10px;
@@ -67,7 +123,7 @@
       transform: translateY(-50%);
       background: none;
       border: none;
-      color: #999;
+      color: var(--text-muted);
       cursor: pointer;
       padding: 5px;
       display: none;
@@ -85,26 +141,27 @@
     
     .filter-group label {
       font-size: 14px;
-      color: #666;
+      color: var(--text-secondary);
     }
-    
+
     .filter-group select {
       padding: 8px 12px;
-      border: 1px solid #ddd;
+      border: 1px solid var(--input-border);
       border-radius: 5px;
       font-size: 14px;
-      background: white;
+      background: var(--bg-card);
+      color: var(--text-primary);
       cursor: pointer;
     }
-    
+
     .stats {
       font-size: 14px;
-      color: #666;
+      color: var(--text-secondary);
     }
     
     .export-all-btn {
       padding: 10px 20px;
-      background: #5436DA;
+      background: var(--primary-color);
       color: white;
       border: none;
       border-radius: 5px;
@@ -112,13 +169,14 @@
       cursor: pointer;
       transition: background 0.2s;
     }
-    
+
     .export-all-btn:hover {
-      background: #4329B8;
+      background: var(--primary-hover);
     }
-    
+
     .export-all-btn:disabled {
-      background: #ccc;
+      background: var(--disabled-bg);
+      color: var(--disabled-text);
       cursor: not-allowed;
     }
     
@@ -129,27 +187,27 @@
     }
     
     .conversations-table {
-      background: white;
+      background: var(--bg-card);
       border-radius: 8px;
       overflow: hidden;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+      box-shadow: 0 2px 8px var(--shadow-sm);
     }
-    
+
     table {
       width: 100%;
       border-collapse: collapse;
     }
-    
+
     thead {
-      background: #f8f9fa;
-      border-bottom: 2px solid #e0e0e0;
+      background: var(--secondary-bg);
+      border-bottom: 2px solid var(--border-color);
     }
-    
+
     th {
       padding: 15px;
       text-align: left;
       font-weight: 600;
-      color: #666;
+      color: var(--text-secondary);
       font-size: 13px;
       text-transform: uppercase;
       letter-spacing: 0.5px;
@@ -157,9 +215,9 @@
       user-select: none;
       position: relative;
     }
-    
+
     th.sortable:hover {
-      background: #f0f0f0;
+      background: var(--hover-bg);
     }
     
     th.sorted-asc::after,
@@ -176,20 +234,20 @@
     }
     
     th.sorted-asc::after {
-      border-bottom: 5px solid #5436DA;
+      border-bottom: 5px solid var(--primary-color);
     }
-    
+
     th.sorted-desc::after {
-      border-top: 5px solid #5436DA;
+      border-top: 5px solid var(--primary-color);
     }
-    
+
     tbody tr {
-      border-bottom: 1px solid #f0f0f0;
+      border-bottom: 1px solid var(--border-light);
       transition: background 0.1s;
     }
-    
+
     tbody tr:hover {
-      background: #f8f9fa;
+      background: var(--hover-bg);
     }
     
     td {
@@ -199,25 +257,25 @@
     
     .conversation-name {
       font-weight: 500;
-      color: #333;
+      color: var(--text-primary);
       max-width: 400px;
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
     }
-    
+
     .conversation-name a {
       color: inherit;
       text-decoration: none;
     }
-    
+
     .conversation-name a:hover {
-      color: #5436DA;
+      color: var(--link-hover);
       text-decoration: underline;
     }
-    
+
     .date {
-      color: #666;
+      color: var(--text-secondary);
       white-space: nowrap;
     }
     
@@ -263,53 +321,54 @@
     }
     
     .btn-export {
-      background: #5436DA;
+      background: var(--primary-color);
       color: white;
     }
-    
+
     .btn-export:hover {
-      background: #4329B8;
+      background: var(--primary-hover);
     }
-    
+
     .btn-view {
-      background: #e0e0e0;
-      color: #333;
+      background: var(--secondary-bg);
+      color: var(--text-primary);
     }
-    
+
     .btn-view:hover {
-      background: #d0d0d0;
+      background: var(--hover-bg);
+      filter: brightness(0.95);
     }
-    
+
     .btn-small:disabled {
-      background: #ccc;
-      color: #999;
+      background: var(--disabled-bg);
+      color: var(--disabled-text);
       cursor: not-allowed;
     }
     
     .loading {
       text-align: center;
       padding: 40px;
-      color: #666;
+      color: var(--text-secondary);
     }
-    
+
     .error {
       text-align: center;
       padding: 40px;
-      color: #d32f2f;
+      color: var(--error-color);
     }
-    
+
     .no-results {
       text-align: center;
       padding: 40px;
-      color: #666;
+      color: var(--text-secondary);
     }
     
     .spinner {
       display: inline-block;
       width: 30px;
       height: 30px;
-      border: 3px solid #f3f3f3;
-      border-top: 3px solid #5436DA;
+      border: 3px solid var(--border-light);
+      border-top: 3px solid var(--primary-color);
       border-radius: 50%;
       animation: spin 1s linear infinite;
       margin-bottom: 10px;
@@ -324,10 +383,10 @@
       position: fixed;
       bottom: 20px;
       right: 20px;
-      background: white;
+      background: var(--bg-card);
       padding: 15px;
       border-radius: 8px;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+      box-shadow: 0 4px 12px var(--shadow-md);
       display: none;
       z-index: 1000;
     }
@@ -352,13 +411,14 @@
       bottom: 20px;
       left: 50%;
       transform: translateX(-50%);
-      background: #333;
+      background: var(--toast-bg);
       color: white;
       padding: 12px 24px;
       border-radius: 25px;
       font-size: 14px;
       z-index: 2000;
       display: none;
+      box-shadow: 0 4px 12px var(--shadow-md);
     }
     
     .toast.show {
@@ -449,7 +509,7 @@
       gap: 15px;
       align-items: center;
       padding: 8px 15px;
-      background: #f0f0f0;
+      background: var(--secondary-bg);
       border-radius: 5px;
     }
     .export-settings label {
@@ -457,30 +517,32 @@
       align-items: center;
       gap: 5px;
       font-size: 13px;
-      color: #555;
+      color: var(--text-secondary);
     }
     .export-settings select {
       padding: 4px 8px;
-      border: 1px solid #ccc;
+      border: 1px solid var(--input-border);
       border-radius: 3px;
       font-size: 13px;
+      background-color: var(--bg-card);
+      color: var(--text-primary);
     }
   </style>
   
   <div class="toast" id="toast"></div>
   
   <!-- Progress modal for bulk export -->
-  <div id="progressModal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 3000;">
-    <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; padding: 30px; border-radius: 8px; min-width: 400px;">
-      <h3 style="margin-top: 0;">Exporting Conversations</h3>
+  <div id="progressModal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: var(--modal-overlay); z-index: 3000;">
+    <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: var(--bg-card); padding: 30px; border-radius: 8px; min-width: 400px; color: var(--text-primary);">
+      <h3 style="margin-top: 0; color: var(--text-primary);">Exporting Conversations</h3>
       <div style="margin: 20px 0;">
-        <div id="progressText">Preparing export...</div>
-        <div style="background: #e0e0e0; height: 20px; border-radius: 10px; margin-top: 10px; overflow: hidden;">
-          <div id="progressBar" style="background: #5436DA; height: 100%; width: 0%; transition: width 0.3s;"></div>
+        <div id="progressText" style="color: var(--text-primary);">Preparing export...</div>
+        <div style="background: var(--progress-bg); height: 20px; border-radius: 10px; margin-top: 10px; overflow: hidden;">
+          <div id="progressBar" style="background: var(--primary-color); height: 100%; width: 0%; transition: width 0.3s;"></div>
         </div>
-        <div id="progressStats" style="margin-top: 10px; font-size: 14px; color: #666;"></div>
+        <div id="progressStats" style="margin-top: 10px; font-size: 14px; color: var(--text-secondary);"></div>
       </div>
-      <button id="cancelExport" style="padding: 8px 16px; background: #dc3545; color: white; border: none; border-radius: 4px; cursor: pointer;">Cancel</button>
+      <button id="cancelExport" style="padding: 8px 16px; background: var(--cancel-btn); color: white; border: none; border-radius: 4px; cursor: pointer;">Cancel</button>
     </div>
   </div>
   
