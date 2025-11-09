@@ -54,13 +54,13 @@ let selectedConversations = new Set(); // Track selected conversation IDs
 
 // Model name mappings
 const MODEL_DISPLAY_NAMES = {
-  'claude-3-sonnet-20240229': 'Claude 3 Sonnet',
-  'claude-3-opus-20240229': 'Claude 3 Opus',
-  'claude-3-haiku-20240307': 'Claude 3 Haiku',
-  'claude-3-5-sonnet-20240620': 'Claude 3.5 Sonnet',
-  'claude-3-5-haiku-20241022': 'Claude 3.5 Haiku',
-  'claude-3-5-sonnet-20241022': 'Claude 3.6 Sonnet',
-  'claude-3-7-sonnet-20250219': 'Claude 3.7 Sonnet',
+  'claude-3-sonnet-20240229': 'Claude Sonnet 3',
+  'claude-3-opus-20240229': 'Claude Opus 3',
+  'claude-3-haiku-20240307': 'Claude Haiku 3',
+  'claude-3-5-sonnet-20240620': 'Claude Sonnet 3.5',
+  'claude-3-5-haiku-20241022': 'Claude Haiku 3.5',
+  'claude-3-5-sonnet-20241022': 'Claude Sonnet 3.6',
+  'claude-3-7-sonnet-20250219': 'Claude Sonnet 3.7',
   'claude-sonnet-4-20250514': 'Claude Sonnet 4',
   'claude-opus-4-20250514': 'Claude Opus 4',
   'claude-opus-4-1-20250805': 'Claude Opus 4.1',
@@ -235,6 +235,10 @@ function sortConversations() {
           aVal = new Date(a.updated_at);
           bVal = new Date(b.updated_at);
           break;
+        case 'model':
+          aVal = (a.model || '').toLowerCase();
+          bVal = (b.model || '').toLowerCase();
+          break;
         default:
           continue;
       }
@@ -300,7 +304,7 @@ function displayConversations() {
           <th class="sortable" data-sort="name">Name${getSortIndicator('name')}</th>
           <th class="sortable" data-sort="updated">Last Updated${getSortIndicator('updated')}</th>
           <th class="sortable" data-sort="created">Created${getSortIndicator('created')}</th>
-          <th>Model</th>
+          <th class="sortable" data-sort="model">Model${getSortIndicator('model')}</th>
           <th>Actions</th>
           <th class="checkbox-col">
             <input type="checkbox" id="selectAll" class="select-all-checkbox" ${selectedConversations.size > 0 ? 'checked' : ''}>
