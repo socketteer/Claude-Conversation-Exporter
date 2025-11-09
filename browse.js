@@ -273,13 +273,15 @@ function handleColumnSort(field) {
 // Get sort indicator for a column
 function getSortIndicator(field) {
   const sortIndex = sortStack.findIndex(s => s.field === field);
-  if (sortIndex === -1) return '';
+
+  // Only show indicator for the primary (most recent) sort
+  if (sortIndex !== 0) return '';
 
   const {direction} = sortStack[sortIndex];
-  const arrow = direction === 'asc' ? '↑' : '↓';
-  const priority = sortStack.length > 1 ? `<sub>${sortIndex + 1}</sub>` : '';
+  const primaryArrow = direction === 'asc' ? '↑' : '↓';
+  const secondaryArrow = direction === 'asc' ? '↓' : '↑';
 
-  return ` <span class="sort-indicator">${arrow}${priority}</span>`;
+  return ` <span class="sort-indicator">${primaryArrow}<sub>${secondaryArrow}</sub></span>`;
 }
 
 // Display conversations in table
