@@ -1,3 +1,49 @@
+// Theme management
+function initTheme() {
+  // Check for saved theme preference or default to system preference
+  const savedTheme = localStorage.getItem('theme');
+  const sunIcon = document.querySelector('.sun-icon');
+  const moonIcon = document.querySelector('.moon-icon');
+
+  if (savedTheme) {
+    document.documentElement.setAttribute('data-theme', savedTheme);
+    updateThemeIcon(savedTheme, sunIcon, moonIcon);
+  } else {
+    // Use system preference
+    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    updateThemeIcon(prefersDark ? 'dark' : 'light', sunIcon, moonIcon);
+  }
+}
+
+function updateThemeIcon(theme, sunIcon, moonIcon) {
+  if (theme === 'dark') {
+    sunIcon.style.display = 'none';
+    moonIcon.style.display = 'block';
+  } else {
+    sunIcon.style.display = 'block';
+    moonIcon.style.display = 'none';
+  }
+}
+
+function toggleTheme() {
+  const currentTheme = document.documentElement.getAttribute('data-theme');
+  const sunIcon = document.querySelector('.sun-icon');
+  const moonIcon = document.querySelector('.moon-icon');
+
+  // If no theme is set, check system preference
+  let newTheme;
+  if (!currentTheme) {
+    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    newTheme = prefersDark ? 'light' : 'dark';
+  } else {
+    newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+  }
+
+  document.documentElement.setAttribute('data-theme', newTheme);
+  localStorage.setItem('theme', newTheme);
+  updateThemeIcon(newTheme, sunIcon, moonIcon);
+}
+
 // State management
 let allConversations = [];
 let filteredConversations = [];
@@ -33,6 +79,7 @@ const DEFAULT_MODEL_TIMELINE = [
 
 // Initialize on page load
 document.addEventListener('DOMContentLoaded', async () => {
+  initTheme();
   await loadOrgId();
   await loadConversations();
   setupEventListeners();
@@ -522,6 +569,9 @@ function showToast(message, isError = false) {
 
 // Setup event listeners
 function setupEventListeners() {
+  // Theme toggle
+  document.getElementById('themeToggle').addEventListener('click', toggleTheme);
+
   // Search input
   const searchInput = document.getElementById('searchInput');
   searchInput.addEventListener('input', (e) => {
