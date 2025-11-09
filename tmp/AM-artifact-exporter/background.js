@@ -1,22 +1,59 @@
 // Import JSZip for creating ZIP files
 importScripts('jszip.min.js');
 
-// Fetch all conversations from the organization
+// Fetch all conversations from the organization with pagination support
 async function fetchAllConversations(orgId) {
-  const url = `https://claude.ai/api/organizations/${orgId}/chat_conversations`;
+  let allConversations = [];
+  let offset = 0;
+  const limit = 100; // Fetch in batches of 100
+  let hasMore = true;
 
-  const response = await fetch(url, {
-    credentials: 'include',
-    headers: {
-      'Accept': 'application/json',
+  console.log('Fetching all conversations with pagination...');
+
+  while (hasMore) {
+    const url = `https://claude.ai/api/organizations/${orgId}/chat_conversations?limit=${limit}&offset=${offset}`;
+
+    console.log(`  Fetching batch: offset=${offset}, limit=${limit}`);
+
+    const response = await fetch(url, {
+      credentials: 'include',
+      headers: {
+        'Accept': 'application/json',
+      }
+    });
+
+    if (!response.ok) {
+      throw new Error(`Failed to fetch conversations: ${response.status}`);
     }
-  });
 
-  if (!response.ok) {
-    throw new Error(`Failed to fetch conversations: ${response.status}`);
+    const data = await response.json();
+
+    // Handle both array response and object with conversations array
+    let conversations = Array.isArray(data) ? data : (data.conversations || data.data || []);
+
+    console.log(`  Received ${conversations.length} conversations in this batch`);
+
+    if (conversations.length === 0) {
+      // No more conversations to fetch
+      hasMore = false;
+    } else {
+      allConversations = allConversations.concat(conversations);
+      offset += conversations.length;
+
+      // If we got fewer than the limit, we've reached the end
+      if (conversations.length < limit) {
+        hasMore = false;
+      }
+    }
+
+    // Small delay to avoid rate limiting
+    if (hasMore) {
+      await new Promise(resolve => setTimeout(resolve, 100));
+    }
   }
 
-  return await response.json();
+  console.log(`Total conversations fetched: ${allConversations.length}`);
+  return allConversations;
 }
 
 // Fetch full conversation data including all messages
