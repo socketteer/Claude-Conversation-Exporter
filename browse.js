@@ -236,8 +236,8 @@ function sortConversations() {
           bVal = new Date(b.updated_at);
           break;
         case 'model':
-          aVal = (a.model || '').toLowerCase();
-          bVal = (b.model || '').toLowerCase();
+          aVal = formatModelName(a.model || '').toLowerCase();
+          bVal = formatModelName(b.model || '').toLowerCase();
           break;
         default:
           continue;
