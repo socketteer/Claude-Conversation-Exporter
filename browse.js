@@ -235,6 +235,10 @@ function sortConversations() {
           aVal = new Date(a.updated_at);
           bVal = new Date(b.updated_at);
           break;
+        case 'model':
+          aVal = (a.model || '').toLowerCase();
+          bVal = (b.model || '').toLowerCase();
+          break;
         default:
           continue;
       }
@@ -300,7 +304,7 @@ function displayConversations() {
           <th class="sortable" data-sort="name">Name${getSortIndicator('name')}</th>
           <th class="sortable" data-sort="updated">Last Updated${getSortIndicator('updated')}</th>
           <th class="sortable" data-sort="created">Created${getSortIndicator('created')}</th>
-          <th>Model</th>
+          <th class="sortable" data-sort="model">Model${getSortIndicator('model')}</th>
           <th>Actions</th>
           <th class="checkbox-col">
             <input type="checkbox" id="selectAll" class="select-all-checkbox" ${selectedConversations.size > 0 ? 'checked' : ''}>
