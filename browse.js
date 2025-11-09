@@ -49,6 +49,7 @@ let allConversations = [];
 let filteredConversations = [];
 let orgId = null;
 let currentSort = 'updated_desc';
+let selectedConversations = new Set(); // Track selected conversation IDs
 
 // Model name mappings
 const MODEL_DISPLAY_NAMES = {
@@ -257,6 +258,9 @@ function displayConversations() {
           <th class="sortable" data-sort="created">Created</th>
           <th>Model</th>
           <th>Actions</th>
+          <th class="checkbox-col">
+            <input type="checkbox" id="selectAll" class="select-all-checkbox" ${selectedConversations.size === filteredConversations.length && filteredConversations.length > 0 ? 'checked' : ''}>
+          </th>
         </tr>
       </thead>
       <tbody>
@@ -293,6 +297,9 @@ function displayConversations() {
             </button>
           </div>
         </td>
+        <td class="checkbox-col">
+          <input type="checkbox" class="conversation-checkbox" data-id="${conv.uuid}" ${selectedConversations.has(conv.uuid) ? 'checked' : ''}>
+        </td>
       </tr>
     `;
   });
@@ -318,9 +325,81 @@ function displayConversations() {
       window.open(`https://claude.ai/chat/${conversationId}`, '_blank');
     });
   });
-  
+
+  // Add checkbox listeners
+  document.querySelectorAll('.conversation-checkbox').forEach(checkbox => {
+    checkbox.addEventListener('change', handleCheckboxChange);
+  });
+
+  // Add select all checkbox listener
+  const selectAllCheckbox = document.getElementById('selectAll');
+  if (selectAllCheckbox) {
+    selectAllCheckbox.addEventListener('change', handleSelectAll);
+  }
+
+  // Update export button text
+  updateExportButtonText();
+
   // Enable export all button
   document.getElementById('exportAllBtn').disabled = false;
+}
+
+// Handle individual checkbox change
+function handleCheckboxChange(e) {
+  const conversationId = e.target.dataset.id;
+
+  if (e.target.checked) {
+    selectedConversations.add(conversationId);
+  } else {
+    selectedConversations.delete(conversationId);
+  }
+
+  updateExportButtonText();
+  updateSelectAllCheckbox();
+}
+
+// Handle select all checkbox
+function handleSelectAll(e) {
+  const checkboxes = document.querySelectorAll('.conversation-checkbox');
+
+  if (e.target.checked) {
+    // Select all visible conversations
+    checkboxes.forEach(checkbox => {
+      checkbox.checked = true;
+      selectedConversations.add(checkbox.dataset.id);
+    });
+  } else {
+    // Deselect all
+    checkboxes.forEach(checkbox => {
+      checkbox.checked = false;
+    });
+    selectedConversations.clear();
+  }
+
+  updateExportButtonText();
+}
+
+// Update select all checkbox state
+function updateSelectAllCheckbox() {
+  const selectAllCheckbox = document.getElementById('selectAll');
+  if (!selectAllCheckbox) return;
+
+  const visibleIds = filteredConversations.map(c => c.uuid);
+  const allVisibleSelected = visibleIds.length > 0 && visibleIds.every(id => selectedConversations.has(id));
+
+  selectAllCheckbox.checked = allVisibleSelected;
+}
+
+// Update export button text based on selection
+function updateExportButtonText() {
+  const exportBtn = document.getElementById('exportAllBtn');
+  if (!exportBtn) return;
+
+  if (selectedConversations.size > 0) {
+    exportBtn.textContent = `Export Selected (${selectedConversations.size})`;
+  } else {
+    exportBtn.textContent = 'Export All';
+  }
 }
 
 // Update statistics
@@ -387,41 +466,52 @@ async function exportConversation(conversationId, conversationName) {
 async function exportAllFiltered() {
   const format = document.getElementById('exportFormat').value;
   const includeMetadata = document.getElementById('includeMetadata').checked;
-  
+
   const button = document.getElementById('exportAllBtn');
   button.disabled = true;
+  const originalButtonText = button.textContent;
   button.textContent = 'Preparing...';
-  
+
+  // Determine which conversations to export
+  let conversationsToExport;
+  if (selectedConversations.size > 0) {
+    // Export only selected conversations
+    conversationsToExport = filteredConversations.filter(conv => selectedConversations.has(conv.uuid));
+  } else {
+    // Export all filtered conversations
+    conversationsToExport = filteredConversations;
+  }
+
   // Show progress modal
   const progressModal = document.getElementById('progressModal');
   const progressBar = document.getElementById('progressBar');
   const progressText = document.getElementById('progressText');
   const progressStats = document.getElementById('progressStats');
   progressModal.style.display = 'block';
-  
+
   let cancelExport = false;
   const cancelButton = document.getElementById('cancelExport');
   cancelButton.onclick = () => {
     cancelExport = true;
     progressText.textContent = 'Cancelling...';
   };
-  
+
   try {
     // Create a new ZIP file
     const zip = new JSZip();
-    const total = filteredConversations.length;
+    const total = conversationsToExport.length;
     let completed = 0;
     let failed = 0;
     const failedConversations = [];
-    
+
     progressText.textContent = `Exporting ${total} conversations...`;
-    
+
     // Process conversations in batches to avoid overwhelming the API
     const batchSize = 3; // Process 3 at a time
     for (let i = 0; i < total; i += batchSize) {
       if (cancelExport) break;
-      
-      const batch = filteredConversations.slice(i, Math.min(i + batchSize, total));
+
+      const batch = conversationsToExport.slice(i, Math.min(i + batchSize, total));
       const promises = batch.map(async (conv) => {
         try {
           const response = await fetch(
@@ -542,7 +632,7 @@ async function exportAllFiltered() {
     showToast(`Export failed: ${error.message}`, true);
   } finally {
     button.disabled = false;
-    button.textContent = 'Export All';
+    button.textContent = originalButtonText;
   }
 }
 
