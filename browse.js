@@ -146,11 +146,7 @@ async function loadConversations() {
       ...conv,
       model: inferModel(conv)
     }));
-    
-    // Extract unique models for filter
-    const models = [...new Set(allConversations.map(c => c.model))].filter(m => m).sort();
-    populateModelFilter(models);
-    
+
     // Apply initial sort and display
     applyFiltersAndSort();
     
@@ -160,16 +156,19 @@ async function loadConversations() {
   }
 }
 
-// Populate model filter dropdown
-function populateModelFilter(models) {
-  const modelFilter = document.getElementById('modelFilter');
-  modelFilter.innerHTML = '<option value="">All Models</option>';
-  
-  models.forEach(model => {
+// Populate project filter dropdown (to be implemented)
+function populateProjectFilter(projects) {
+  const projectFilter = document.getElementById('projectFilter');
+  if (!projectFilter) return;
+
+  projectFilter.innerHTML = '<option value="">All Projects</option>';
+
+  // Projects will be populated once we implement the projects API
+  projects.forEach(project => {
     const option = document.createElement('option');
-    option.value = model;
-    option.textContent = formatModelName(model);
-    modelFilter.appendChild(option);
+    option.value = project.id;
+    option.textContent = project.name;
+    projectFilter.appendChild(option);
   });
 }
 
@@ -189,7 +188,7 @@ function getModelBadgeClass(model) {
 // Apply filters and sorting
 function applyFiltersAndSort() {
   const searchTerm = document.getElementById('searchInput').value.toLowerCase();
-  const modelFilter = document.getElementById('modelFilter').value;
+  const projectFilter = document.getElementById('projectFilter')?.value;
 
   // Filter conversations
   filteredConversations = allConversations.filter(conv => {
@@ -197,9 +196,10 @@ function applyFiltersAndSort() {
       conv.name.toLowerCase().includes(searchTerm) ||
       (conv.summary && conv.summary.toLowerCase().includes(searchTerm));
 
-    const matchesModel = !modelFilter || conv.model === modelFilter;
+    // Project filtering will be implemented later
+    const matchesProject = !projectFilter; // For now, show all conversations
 
-    return matchesSearch && matchesModel;
+    return matchesSearch && matchesProject;
   });
 
   // Sort conversations
@@ -919,8 +919,11 @@ function setupEventListeners() {
     applyFiltersAndSort();
   });
   
-  // Model filter
-  document.getElementById('modelFilter').addEventListener('change', applyFiltersAndSort);
+  // Project filter (not yet implemented - just placeholder)
+  const projectFilter = document.getElementById('projectFilter');
+  if (projectFilter) {
+    projectFilter.addEventListener('change', applyFiltersAndSort);
+  }
 
   // Export all button
   document.getElementById('exportAllBtn').addEventListener('click', exportAllFiltered);

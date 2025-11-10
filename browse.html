@@ -148,6 +148,7 @@
       gap: 15px;
       align-items: center;
       flex-wrap: wrap;
+      justify-content: space-between;
     }
     
     .search-box {
@@ -555,7 +556,21 @@
       </div>
 
       <div class="header-right">
-        <div class="export-controls-wrapper">
+        <div class="stats" id="stats">
+          Loading...
+        </div>
+      </div>
+    </div>
+
+    <div class="controls">
+      <div class="filter-group">
+        <label>Project:</label>
+        <select id="projectFilter">
+          <option value="">All Projects</option>
+        </select>
+      </div>
+
+      <div class="export-controls-wrapper">
         <div class="export-settings">
           <div class="export-row">
             <div class="export-section chat-section">
@@ -613,20 +628,6 @@
         <button class="export-all-btn" id="exportAllBtn" disabled>
           Export All
         </button>
-        </div>
-      </div>
-    </div>
-
-    <div class="controls">
-      <div class="filter-group">
-        <label>Model:</label>
-        <select id="modelFilter">
-          <option value="">All Models</option>
-        </select>
-      </div>
-
-      <div class="stats" id="stats">
-        Loading...
       </div>
     </div>
   </div>
@@ -670,6 +671,9 @@
       display: flex;
       align-items: center;
       flex-shrink: 0;
+    }
+    .header-right .stats {
+      margin: 0;
     }
     .export-controls-wrapper {
       display: flex;
