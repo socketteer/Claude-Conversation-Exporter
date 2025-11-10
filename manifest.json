@@ -22,7 +22,7 @@
       "content_scripts": [
     {
       "matches": ["https://claude.ai/*"],
-      "js": ["content.js"],
+      "js": ["utils.js", "content.js"],
       "css": ["content.css"]
     }
   ],
