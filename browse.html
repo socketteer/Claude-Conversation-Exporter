@@ -545,38 +545,17 @@
           </svg>
         </button>
         <h1>Browse Claude Conversations</h1>
+      </div>
+
+      <div class="header-center">
         <div class="search-box" id="searchBox">
           <input type="text" id="searchInput" placeholder="Search conversations by name...">
           <button class="clear-btn" id="clearSearch">✕</button>
         </div>
       </div>
-    </div>
-    <div class="controls">
-      
-      <div class="filter-group">
-        <label>Model:</label>
-        <select id="modelFilter">
-          <option value="">All Models</option>
-        </select>
-      </div>
-      
-      <div class="filter-group">
-        <label>Sort by:</label>
-        <select id="sortBy">
-          <option value="updated_desc">Recently Updated</option>
-          <option value="updated_asc">Oldest Updated</option>
-          <option value="created_desc">Recently Created</option>
-          <option value="created_asc">Oldest Created</option>
-          <option value="name_asc">Name (A-Z)</option>
-          <option value="name_desc">Name (Z-A)</option>
-        </select>
-      </div>
-      
-      <div class="stats" id="stats">
-        Loading...
-      </div>
 
-      <div class="export-controls-wrapper">
+      <div class="header-right">
+        <div class="export-controls-wrapper">
         <div class="export-settings">
           <div class="export-row">
             <div class="export-section chat-section">
@@ -634,6 +613,32 @@
         <button class="export-all-btn" id="exportAllBtn" disabled>
           Export All
         </button>
+        </div>
+      </div>
+    </div>
+
+    <div class="controls">
+      <div class="filter-group">
+        <label>Model:</label>
+        <select id="modelFilter">
+          <option value="">All Models</option>
+        </select>
+      </div>
+
+      <div class="filter-group">
+        <label>Sort by:</label>
+        <select id="sortBy">
+          <option value="updated_desc">Recently Updated</option>
+          <option value="updated_asc">Oldest Updated</option>
+          <option value="created_desc">Recently Created</option>
+          <option value="created_asc">Oldest Created</option>
+          <option value="name_asc">Name (A-Z)</option>
+          <option value="name_desc">Name (Z-A)</option>
+        </select>
+      </div>
+
+      <div class="stats" id="stats">
+        Loading...
       </div>
     </div>
   </div>
@@ -651,22 +656,37 @@
   
   <!-- Export options moved to header for better visibility -->
   <style>
+    .header-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      width: 100%;
+      gap: 20px;
+    }
     .header-left {
       display: flex;
       align-items: center;
       gap: 20px;
+      flex-shrink: 0;
     }
     .header-left h1 {
       margin: 0;
     }
-    .header-left .search-box {
-      margin-left: 10px;
+    .header-center {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-grow: 1;
+    }
+    .header-right {
+      display: flex;
+      align-items: center;
+      flex-shrink: 0;
     }
     .export-controls-wrapper {
       display: flex;
       align-items: center;
       gap: 15px;
-      margin-left: auto;
     }
     .export-settings {
       display: inline-flex;
