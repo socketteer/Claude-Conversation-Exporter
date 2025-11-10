@@ -74,8 +74,63 @@ async function fetchConversation(orgId, conversationId) {
   return await response.json();
 }
 
-// Extract artifacts from message text using regex
-function extractArtifacts(text) {
+// Extract artifacts from message (supports both old and new formats)
+function extractArtifactsFromMessage(message) {
+  const artifacts = [];
+
+  // Check if message has content array (new format)
+  if (message.content && Array.isArray(message.content)) {
+    for (const content of message.content) {
+      // NEW FORMAT: tool_use with display_content
+      if (content.type === 'tool_use' && content.display_content) {
+        const displayContent = content.display_content;
+
+        // Check for json_block format
+        if (displayContent.type === 'json_block' && displayContent.json_block) {
+          try {
+            const artifactData = JSON.parse(displayContent.json_block);
+
+            // Extract artifact details
+            const language = artifactData.language || 'txt';
+            const code = artifactData.code || '';
+            const filename = artifactData.filename || 'Untitled';
+
+            // Extract title from filename (remove path and extension)
+            const title = filename.split('/').pop().replace(/\.[^.]+$/, '');
+
+            artifacts.push({
+              title: title || 'Untitled',
+              language: language,
+              type: isProgrammingLanguage(language) ? 'code' : 'document',
+              identifier: null,
+              content: code.trim(),
+            });
+          } catch (e) {
+            // JSON parse failed, skip this artifact
+            console.warn('Failed to parse artifact json_block:', e);
+          }
+        }
+      }
+
+      // OLD FORMAT: Check text content for <antArtifact> tags
+      if (content.text) {
+        const textArtifacts = extractArtifactsFromText(content.text);
+        artifacts.push(...textArtifacts);
+      }
+    }
+  }
+
+  // Fallback: Check message.text directly (older format)
+  if (message.text) {
+    const textArtifacts = extractArtifactsFromText(message.text);
+    artifacts.push(...textArtifacts);
+  }
+
+  return artifacts;
+}
+
+// Extract artifacts from text using regex (OLD FORMAT: <antArtifact> tags)
+function extractArtifactsFromText(text) {
   const artifactRegex = /<antArtifact[^>]*>([\s\S]*?)<\/antArtifact>/g;
   const artifacts = [];
   let match;
@@ -135,6 +190,11 @@ function extractArtifacts(text) {
   }
 
   return artifacts;
+}
+
+// Legacy function name for backward compatibility
+function extractArtifacts(text) {
+  return extractArtifactsFromText(text);
 }
 
 // Get file extension from language
@@ -304,93 +364,27 @@ function processConversation(conversation, zip, usedNames) {
 
   // Process all messages in the conversation
   for (const message of conversation.chat_messages) {
-    if (message.sender === 'assistant' && message.content) {
-      // Handle both old format (text field) and new format (content array)
-      let messageText = '';
+    if (message.sender === 'assistant') {
+      // Extract artifacts using dual-format detection (handles both old and new formats)
+      const artifacts = extractArtifactsFromMessage(message);
 
-      if (Array.isArray(message.content)) {
-        // New format: content is an array of content blocks
-        for (const content of message.content) {
-          if (content.text) {
-            messageText += content.text;
-          }
-        }
-      } else if (typeof message.content === 'string') {
-        // Old format: content is a string
-        messageText = message.content;
-      } else if (message.text) {
-        // Even older format: direct text field
-        messageText = message.text;
+      if (artifacts.length > 0) {
+        console.log(`    Found ${artifacts.length} artifact(s) in message`);
+        artifacts.forEach((art, idx) => {
+          console.log(`      [${idx + 1}] "${art.title}" (type: ${art.type}, language: ${art.language})`);
+        });
       }
 
-      if (messageText) {
-        const artifacts = extractArtifacts(messageText);
-
-        if (artifacts.length > 0) {
-          console.log(`    Found ${artifacts.length} artifact(s) in message`);
-          artifacts.forEach((art, idx) => {
-            console.log(`      [${idx + 1}] "${art.title}" (type: ${art.type}, language: ${art.language})`);
-          });
-        }
-
-        for (const artifact of artifacts) {
-          // Check if this is a programming language artifact
-          if (isProgrammingLanguage(artifact.language)) {
-            // Programming code: save only in original format (root of conversation folder)
-            const fileName = getUniqueFileName(
-              artifact.title,
-              artifact.language,
-              usedNames,
-              conversationName
-            );
-            zip.file(fileName, artifact.content);
-            artifactCount++;
-          } else {
-            // Document/text: export in multiple formats with subfolders
-            // 1. Original format (root folder)
-            const originalFileName = getUniqueFileName(
-              artifact.title,
-              artifact.language,
-              usedNames,
-              conversationName
-            );
-            zip.file(originalFileName, artifact.content);
-            artifactCount++;
-
-            // 2. JSON format (json subfolder)
-            const jsonFileName = getUniqueFileName(
-              artifact.title,
-              artifact.language,
-              usedNames,
-              `${conversationName}/json`,
-              '.json'
-            );
-            zip.file(jsonFileName, generateArtifactJSON(artifact));
-            artifactCount++;
-
-            // 3. Markdown format (md subfolder)
-            const mdFileName = getUniqueFileName(
-              artifact.title,
-              artifact.language,
-              usedNames,
-              `${conversationName}/md`,
-              '.md'
-            );
-            zip.file(mdFileName, generateArtifactMarkdown(artifact));
-            artifactCount++;
-
-            // 4. Plain text format (txt subfolder)
-            const txtFileName = getUniqueFileName(
-              artifact.title,
-              artifact.language,
-              usedNames,
-              `${conversationName}/txt`,
-              '.txt'
-            );
-            zip.file(txtFileName, artifact.content);
-            artifactCount++;
-          }
-        }
+      for (const artifact of artifacts) {
+        // Export in original format only (code or document, doesn't matter)
+        const fileName = getUniqueFileName(
+          artifact.title,
+          artifact.language,
+          usedNames,
+          conversationName
+        );
+        zip.file(fileName, artifact.content);
+        artifactCount++;
       }
     }
   }
