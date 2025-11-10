@@ -409,22 +409,10 @@ function handleCheckboxChange(e) {
   const conversationId = checkbox.dataset.id;
   const currentIndex = parseInt(checkbox.dataset.index);
 
-  console.log('Checkbox change:', {
-    shiftKey: e.shiftKey,
-    currentIndex,
-    lastCheckedIndex,
-    checked: checkbox.checked
-  });
-
   // Handle shift+click for range selection
   if (e.shiftKey && lastCheckedIndex !== null) {
     const start = Math.min(lastCheckedIndex, currentIndex);
     const end = Math.max(lastCheckedIndex, currentIndex);
-
-    console.log('Shift+click range selection:', {start, end});
-
-    // Show visual feedback
-    showToast(`Selecting range: ${start} to ${end} (${end - start + 1} items)`);
 
     // Get all checkboxes and select/deselect the range
     const checkboxes = document.querySelectorAll('.conversation-checkbox');
