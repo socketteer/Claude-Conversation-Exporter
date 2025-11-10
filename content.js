@@ -34,10 +34,7 @@ function inferModel(conversation) {
   
   // Fetch conversation data
   async function fetchConversation(orgId, conversationId) {
-    // TEST: Try rendering_mode=raw to see if it includes artifacts
-    const url = `https://claude.ai/api/organizations/${orgId}/chat_conversations/${conversationId}?tree=True&rendering_mode=raw&render_all_tools=true`;
-
-    console.log('[ARTIFACT TEST] Fetching with rendering_mode=raw');
+    const url = `https://claude.ai/api/organizations/${orgId}/chat_conversations/${conversationId}?tree=True&rendering_mode=messages&render_all_tools=true`;
 
     const response = await fetch(url, {
       credentials: 'include',
@@ -50,25 +47,7 @@ function inferModel(conversation) {
       throw new Error(`Failed to fetch conversation: ${response.status}`);
     }
 
-    const data = await response.json();
-
-    // TEST: Check if we got artifacts
-    let artifactCount = 0;
-    if (data.chat_messages) {
-      for (const msg of data.chat_messages) {
-        const msgText = msg.text || '';
-        const contentText = msg.content ? msg.content.map(c => c.text || '').join('') : '';
-        const combinedText = msgText + contentText;
-
-        if (combinedText.includes('antArtifact')) {
-          artifactCount++;
-        }
-      }
-    }
-    console.log(`[ARTIFACT TEST] Found ${artifactCount} messages with artifact tags`);
-    console.log('[ARTIFACT TEST] Sample message structure:', data.chat_messages ? data.chat_messages[0] : 'No messages');
-
-    return data;
+    return await response.json();
   }
   
   // Fetch all conversations
