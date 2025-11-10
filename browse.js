@@ -893,13 +893,7 @@ function setupEventListeners() {
   
   // Model filter
   document.getElementById('modelFilter').addEventListener('change', applyFiltersAndSort);
-  
-  // Sort dropdown
-  document.getElementById('sortBy').addEventListener('change', (e) => {
-    currentSort = e.target.value;
-    applyFiltersAndSort();
-  });
-  
+
   // Export all button
   document.getElementById('exportAllBtn').addEventListener('click', exportAllFiltered);
 }
