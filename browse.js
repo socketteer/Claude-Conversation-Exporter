@@ -465,10 +465,12 @@ function updateStats() {
 async function exportConversation(conversationId, conversationName) {
   const format = document.getElementById('exportFormat').value;
   const includeMetadata = document.getElementById('includeMetadata').checked;
-  
+  const includeArtifacts = document.getElementById('includeArtifacts').checked;
+  const extractArtifacts = document.getElementById('extractArtifacts').checked;
+
   try {
     showToast(`Exporting ${conversationName}...`);
-    
+
     const response = await fetch(
       `https://claude.ai/api/organizations/${orgId}/chat_conversations/${conversationId}?tree=True&rendering_mode=messages&render_all_tools=true`,
       {
@@ -478,36 +480,104 @@ async function exportConversation(conversationId, conversationName) {
         }
       }
     );
-    
+
     if (!response.ok) {
       throw new Error(`Failed to fetch conversation: ${response.status}`);
     }
-    
+
     const data = await response.json();
-    
+
     // Infer model if null
     data.model = inferModel(data);
-    
-    let content, filename, type;
-    switch (format) {
-      case 'markdown':
-        content = convertToMarkdown(data, includeMetadata, conversationId);
-        filename = `${conversationName || conversationId}.md`;
-        type = 'text/markdown';
-        break;
-      case 'text':
-        content = convertToText(data, includeMetadata);
-        filename = `${conversationName || conversationId}.txt`;
-        type = 'text/plain';
-        break;
-      default:
-        content = JSON.stringify(data, null, 2);
-        filename = `${conversationName || conversationId}.json`;
-        type = 'application/json';
+
+    // Check if we need to extract artifacts to separate files
+    if (extractArtifacts) {
+      const artifactFiles = extractArtifactFiles(data);
+
+      if (artifactFiles.length > 0) {
+        // Create a ZIP with the conversation and artifacts
+        const zip = new JSZip();
+
+        // Add conversation file
+        let conversationContent, conversationFilename;
+        switch (format) {
+          case 'markdown':
+            conversationContent = convertToMarkdown(data, includeMetadata, conversationId, includeArtifacts);
+            conversationFilename = `${conversationName || conversationId}.md`;
+            break;
+          case 'text':
+            conversationContent = convertToText(data, includeMetadata, includeArtifacts);
+            conversationFilename = `${conversationName || conversationId}.txt`;
+            break;
+          default:
+            conversationContent = JSON.stringify(data, null, 2);
+            conversationFilename = `${conversationName || conversationId}.json`;
+        }
+
+        zip.file(conversationFilename, conversationContent);
+
+        // Add artifact files to an artifacts subfolder
+        const artifactsFolder = zip.folder('artifacts');
+        for (const artifact of artifactFiles) {
+          artifactsFolder.file(artifact.filename, artifact.content);
+        }
+
+        // Generate and download ZIP
+        const blob = await zip.generateAsync({ type: 'blob' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `${conversationName || conversationId}.zip`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+
+        showToast(`Exported: ${conversationName} with ${artifactFiles.length} artifact(s)`);
+      } else {
+        // No artifacts found, export normally
+        let content, filename, type;
+        switch (format) {
+          case 'markdown':
+            content = convertToMarkdown(data, includeMetadata, conversationId, includeArtifacts);
+            filename = `${conversationName || conversationId}.md`;
+            type = 'text/markdown';
+            break;
+          case 'text':
+            content = convertToText(data, includeMetadata, includeArtifacts);
+            filename = `${conversationName || conversationId}.txt`;
+            type = 'text/plain';
+            break;
+          default:
+            content = JSON.stringify(data, null, 2);
+            filename = `${conversationName || conversationId}.json`;
+            type = 'application/json';
+        }
+        downloadFile(content, filename, type);
+        showToast(`Exported: ${conversationName} (no artifacts found)`);
+      }
+    } else {
+      // Normal export without artifact extraction
+      let content, filename, type;
+      switch (format) {
+        case 'markdown':
+          content = convertToMarkdown(data, includeMetadata, conversationId, includeArtifacts);
+          filename = `${conversationName || conversationId}.md`;
+          type = 'text/markdown';
+          break;
+        case 'text':
+          content = convertToText(data, includeMetadata, includeArtifacts);
+          filename = `${conversationName || conversationId}.txt`;
+          type = 'text/plain';
+          break;
+        default:
+          content = JSON.stringify(data, null, 2);
+          filename = `${conversationName || conversationId}.json`;
+          type = 'application/json';
+      }
+      downloadFile(content, filename, type);
+      showToast(`Exported: ${conversationName}`);
     }
-    
-    downloadFile(content, filename, type);
-    showToast(`Exported: ${conversationName}`);
     
   } catch (error) {
     console.error('Export error:', error);
@@ -519,6 +589,8 @@ async function exportConversation(conversationId, conversationName) {
 async function exportAllFiltered() {
   const format = document.getElementById('exportFormat').value;
   const includeMetadata = document.getElementById('includeMetadata').checked;
+  const includeArtifacts = document.getElementById('includeArtifacts').checked;
+  const extractArtifacts = document.getElementById('extractArtifacts').checked;
 
   const button = document.getElementById('exportAllBtn');
   button.disabled = true;
@@ -589,23 +661,39 @@ async function exportAllFiltered() {
           // Generate filename and content based on format
           let content, filename;
           const safeName = conv.name.replace(/[<>:"/\\|?*]/g, '_'); // Remove invalid filename characters
-          
+
           switch (format) {
             case 'markdown':
-              content = convertToMarkdown(data, includeMetadata, conv.uuid);
+              content = convertToMarkdown(data, includeMetadata, conv.uuid, includeArtifacts);
               filename = `${safeName}.md`;
               break;
             case 'text':
-              content = convertToText(data, includeMetadata);
+              content = convertToText(data, includeMetadata, includeArtifacts);
               filename = `${safeName}.txt`;
               break;
             default: // json
               content = JSON.stringify(data, null, 2);
               filename = `${safeName}.json`;
           }
-          
-          // Add file to ZIP
-          zip.file(filename, content);
+
+          // If extracting artifacts, create folder structure
+          if (extractArtifacts) {
+            const convFolder = zip.folder(safeName);
+            convFolder.file(filename, content);
+
+            // Extract and add artifact files
+            const artifactFiles = extractArtifactFiles(data);
+            if (artifactFiles.length > 0) {
+              const artifactsFolder = convFolder.folder('artifacts');
+              for (const artifact of artifactFiles) {
+                artifactsFolder.file(artifact.filename, artifact.content);
+              }
+            }
+          } else {
+            // Add file to ZIP root
+            zip.file(filename, content);
+          }
+
           completed++;
           
         } catch (error) {

@@ -237,7 +237,7 @@ Feel free to submit issues or pull requests if you find bugs or have suggestions
 
 ## Acknowledgments
 
-- **Code Development**: Written by Claude Opus 4.1 in collaboration with a human developer
+- **Code Development**: Written by Claude Sonnet 4.5 in collaboration with a human developer
 - **ZIP Library**: Uses [JSZip](https://stuk.github.io/jszip/) for creating ZIP archives
 - **Motivation**: Inspired by the need for better Claude.ai conversation management and the limitations of official exports
 
