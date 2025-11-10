@@ -137,34 +137,55 @@
     </div>
     
     <div class="options">
-    <label>
-      Export format:
-      <select id="format">
-        <option value="json">JSON (Full Data)</option>
-        <option value="markdown">Markdown</option>
-        <option value="text">Plain Text</option>
-      </select>
-    </label>
+    <!-- Chat Export Options -->
+    <div class="export-row">
+      <label>
+        Chat format:
+        <select id="format">
+          <option value="json">JSON</option>
+          <option value="markdown">Markdown</option>
+          <option value="text">Plain Text</option>
+        </select>
+      </label>
 
-    <label title="Include the conversation messages in the exported file">
-      <input type="checkbox" id="includeChats" checked>
-      Include conversation text
-    </label>
+      <label title="Include the conversation messages in the exported file">
+        <input type="checkbox" id="includeChats" checked>
+        Chats
+      </label>
 
-    <label title="Add conversation metadata (name, date, model, etc.) at the top of exported files">
-      <input type="checkbox" id="includeMetadata" checked>
-      Include metadata (timestamps, model, etc.)
-    </label>
+      <label title="Add conversation metadata (name, date, model, etc.) at the top of exported files">
+        <input type="checkbox" id="includeMetadata" checked>
+        Metadata
+      </label>
 
-    <label title="Include artifacts (code, documents, etc.) directly within the conversation text">
-      <input type="checkbox" id="includeArtifacts">
-      Include artifacts inline (code, documents, etc.)
-    </label>
+      <label title="Include artifacts (code, documents, etc.) directly within the conversation text">
+        <input type="checkbox" id="includeArtifacts">
+        Artifacts inline
+      </label>
+    </div>
 
-    <label title="Extract artifacts as separate files in a folder">
-      <input type="checkbox" id="extractArtifacts">
-      Artifact files
-    </label>
+    <!-- Artifact Export Options -->
+    <div class="export-row">
+      <label>
+        Artifact format:
+        <select id="artifactFormat">
+          <option value="original">Original</option>
+          <option value="markdown">Markdown</option>
+          <option value="text">Plain Text</option>
+          <option value="json">JSON</option>
+        </select>
+      </label>
+
+      <label title="Extract artifacts as separate files in a folder">
+        <input type="checkbox" id="extractArtifacts">
+        Artifact files
+      </label>
+
+      <label title="Flatten artifact structure (no subfolders, with conversation name prefix)">
+        <input type="checkbox" id="flattenArtifacts">
+        Artifacts flat
+      </label>
+    </div>
   </div>
 
   <button id="exportCurrent">Export Current Conversation</button>
