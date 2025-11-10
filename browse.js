@@ -465,10 +465,11 @@ function updateStats() {
 async function exportConversation(conversationId, conversationName) {
   const format = document.getElementById('exportFormat').value;
   const includeMetadata = document.getElementById('includeMetadata').checked;
-  
+  const includeArtifacts = document.getElementById('includeArtifacts').checked;
+
   try {
     showToast(`Exporting ${conversationName}...`);
-    
+
     const response = await fetch(
       `https://claude.ai/api/organizations/${orgId}/chat_conversations/${conversationId}?tree=True&rendering_mode=messages&render_all_tools=true`,
       {
@@ -478,25 +479,25 @@ async function exportConversation(conversationId, conversationName) {
         }
       }
     );
-    
+
     if (!response.ok) {
       throw new Error(`Failed to fetch conversation: ${response.status}`);
     }
-    
+
     const data = await response.json();
-    
+
     // Infer model if null
     data.model = inferModel(data);
-    
+
     let content, filename, type;
     switch (format) {
       case 'markdown':
-        content = convertToMarkdown(data, includeMetadata, conversationId);
+        content = convertToMarkdown(data, includeMetadata, conversationId, includeArtifacts);
         filename = `${conversationName || conversationId}.md`;
         type = 'text/markdown';
         break;
       case 'text':
-        content = convertToText(data, includeMetadata);
+        content = convertToText(data, includeMetadata, includeArtifacts);
         filename = `${conversationName || conversationId}.txt`;
         type = 'text/plain';
         break;
@@ -519,6 +520,7 @@ async function exportConversation(conversationId, conversationName) {
 async function exportAllFiltered() {
   const format = document.getElementById('exportFormat').value;
   const includeMetadata = document.getElementById('includeMetadata').checked;
+  const includeArtifacts = document.getElementById('includeArtifacts').checked;
 
   const button = document.getElementById('exportAllBtn');
   button.disabled = true;
@@ -592,11 +594,11 @@ async function exportAllFiltered() {
           
           switch (format) {
             case 'markdown':
-              content = convertToMarkdown(data, includeMetadata, conv.uuid);
+              content = convertToMarkdown(data, includeMetadata, conv.uuid, includeArtifacts);
               filename = `${safeName}.md`;
               break;
             case 'text':
-              content = convertToText(data, includeMetadata);
+              content = convertToText(data, includeMetadata, includeArtifacts);
               filename = `${safeName}.txt`;
               break;
             default: // json
