@@ -818,8 +818,18 @@ async function exportAllFiltered() {
               filename = `${safeName}.json`;
           }
 
-          // If extracting artifacts (nested or flat), create folder structure
-          if (extractArtifacts || flattenArtifacts) {
+          // Special case: ONLY flat artifacts (no chats, no nested) - dump all in root
+          if (flattenArtifacts && !extractArtifacts && includeChats === false) {
+            // Add artifacts directly to ZIP root with conversation name prefix
+            if (artifactFiles.length > 0) {
+              for (const artifact of artifactFiles) {
+                const artifactFilename = `${safeName}_${artifact.filename}`;
+                zip.file(artifactFilename, artifact.content);
+              }
+            }
+          }
+          // If extracting artifacts (nested or flat with other options), create folder structure
+          else if (extractArtifacts || flattenArtifacts) {
             const convFolder = zip.folder(safeName);
 
             // Add conversation file only if includeChats is true
@@ -899,10 +909,12 @@ async function exportAllFiltered() {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    // Format: claude-exports-2025-10-31_14-30-45.zip
+    // Format: claude-artifacts-2025-10-31_14-30-45.zip or claude-exports-2025-10-31_14-30-45.zip
     const now = new Date();
     const datetime = now.toISOString().replace(/[:.]/g, '-').slice(0, 19).replace('T', '_');
-    a.download = `claude-exports-${datetime}.zip`;
+    // Use 'claude-artifacts' when ONLY flat artifacts are exported
+    const prefix = (flattenArtifacts && !extractArtifacts && includeChats === false) ? 'claude-artifacts' : 'claude-exports';
+    a.download = `${prefix}-${datetime}.zip`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
