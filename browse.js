@@ -47,6 +47,8 @@ function toggleTheme() {
 // State management
 let allConversations = [];
 let filteredConversations = [];
+let allProjects = [];
+let projectsMap = {}; // Map project UUID to project name
 let orgId = null;
 let currentSort = 'updated_desc';
 let sortStack = []; // Track multi-level sorting: [{field: 'name', direction: 'asc'}, ...]
@@ -141,6 +143,16 @@ async function loadProjects() {
 
     const projects = await response.json();
     console.log(`Loaded ${projects.length} projects:`, projects);
+
+    // Store projects globally and build map
+    allProjects = projects;
+    projectsMap = {};
+    projects.forEach(project => {
+      const projectId = project.uuid || project.id;
+      const projectName = project.name || project.title || 'Untitled Project';
+      projectsMap[projectId] = projectName;
+    });
+
     return projects;
   } catch (error) {
     console.warn('Error loading projects:', error);
@@ -220,6 +232,13 @@ function formatModelName(model) {
   return MODEL_DISPLAY_NAMES[model] || model;
 }
 
+// Get project name for a conversation
+function getProjectName(conversation) {
+  const projectId = conversation.project_uuid || conversation.project_id || conversation.projectUuid;
+  if (!projectId) return '-';
+  return projectsMap[projectId] || '-';
+}
+
 // Get model badge class
 function getModelBadgeClass(model) {
   if (model.includes('sonnet')) return 'sonnet';
@@ -276,6 +295,10 @@ function sortConversations() {
         case 'name':
           aVal = a.name.toLowerCase();
           bVal = b.name.toLowerCase();
+          break;
+        case 'project':
+          aVal = getProjectName(a).toLowerCase();
+          bVal = getProjectName(b).toLowerCase();
           break;
         case 'created':
           aVal = new Date(a.created_at);
@@ -352,6 +375,7 @@ function displayConversations() {
       <thead>
         <tr>
           <th class="sortable" data-sort="name">Name${getSortIndicator('name')}</th>
+          <th class="sortable" data-sort="project">Project${getSortIndicator('project')}</th>
           <th class="sortable" data-sort="updated">Last Updated${getSortIndicator('updated')}</th>
           <th class="sortable" data-sort="created">Created${getSortIndicator('created')}</th>
           <th class="sortable" data-sort="model">Model${getSortIndicator('model')}</th>
@@ -368,6 +392,7 @@ function displayConversations() {
     const updatedDate = new Date(conv.updated_at).toLocaleDateString();
     const createdDate = new Date(conv.created_at).toLocaleDateString();
     const modelBadgeClass = getModelBadgeClass(conv.model);
+    const projectName = getProjectName(conv);
 
     html += `
       <tr data-id="${conv.uuid}">
@@ -378,6 +403,7 @@ function displayConversations() {
             </a>
           </div>
         </td>
+        <td>${projectName}</td>
         <td class="date">${updatedDate}</td>
         <td class="date">${createdDate}</td>
         <td>
