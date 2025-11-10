@@ -122,25 +122,60 @@ async function loadOrgId() {
   });
 }
 
+// Load projects from API
+async function loadProjects() {
+  if (!orgId) return [];
+
+  try {
+    const response = await fetch(`https://claude.ai/api/organizations/${orgId}/projects`, {
+      credentials: 'include',
+      headers: {
+        'Accept': 'application/json',
+      }
+    });
+
+    if (!response.ok) {
+      console.warn(`Failed to load projects: ${response.status}`);
+      return [];
+    }
+
+    const projects = await response.json();
+    console.log(`Loaded ${projects.length} projects:`, projects);
+    return projects;
+  } catch (error) {
+    console.warn('Error loading projects:', error);
+    return [];
+  }
+}
+
 // Load all conversations
 async function loadConversations() {
   if (!orgId) return;
-  
+
   try {
+    // Load projects first
+    const projects = await loadProjects();
+    populateProjectFilter(projects);
+
     const response = await fetch(`https://claude.ai/api/organizations/${orgId}/chat_conversations`, {
       credentials: 'include',
       headers: {
         'Accept': 'application/json',
       }
     });
-    
+
     if (!response.ok) {
       throw new Error(`Failed to load conversations: ${response.status}`);
     }
-    
+
     allConversations = await response.json();
     console.log(`Loaded ${allConversations.length} conversations`);
-    
+
+    // Log first conversation to see structure
+    if (allConversations.length > 0) {
+      console.log('Sample conversation structure:', allConversations[0]);
+    }
+
     // Infer models for conversations with null model
     allConversations = allConversations.map(conv => ({
       ...conv,
@@ -156,20 +191,28 @@ async function loadConversations() {
   }
 }
 
-// Populate project filter dropdown (to be implemented)
+// Populate project filter dropdown
 function populateProjectFilter(projects) {
   const projectFilter = document.getElementById('projectFilter');
   if (!projectFilter) return;
 
   projectFilter.innerHTML = '<option value="">All Projects</option>';
 
-  // Projects will be populated once we implement the projects API
+  if (!projects || projects.length === 0) {
+    console.log('No projects available');
+    return;
+  }
+
+  // Add each project to dropdown
   projects.forEach(project => {
     const option = document.createElement('option');
-    option.value = project.id;
-    option.textContent = project.name;
+    // Use uuid as value (most likely field name)
+    option.value = project.uuid || project.id;
+    option.textContent = project.name || project.title || 'Untitled Project';
     projectFilter.appendChild(option);
   });
+
+  console.log(`Populated ${projects.length} projects in dropdown`);
 }
 
 // Format model name for display
@@ -196,8 +239,11 @@ function applyFiltersAndSort() {
       conv.name.toLowerCase().includes(searchTerm) ||
       (conv.summary && conv.summary.toLowerCase().includes(searchTerm));
 
-    // Project filtering will be implemented later
-    const matchesProject = !projectFilter; // For now, show all conversations
+    // Project filtering - check various possible field names
+    const matchesProject = !projectFilter ||
+      conv.project_uuid === projectFilter ||
+      conv.project_id === projectFilter ||
+      conv.projectUuid === projectFilter;
 
     return matchesSearch && matchesProject;
   });
@@ -827,10 +873,10 @@ async function exportAllFiltered() {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    // Format: claude-conversations-2025-10-31_14-30-45.zip
+    // Format: claude-exports-2025-10-31_14-30-45.zip
     const now = new Date();
     const datetime = now.toISOString().replace(/[:.]/g, '-').slice(0, 19).replace('T', '_');
-    a.download = `claude-conversations-${datetime}.zip`;
+    a.download = `claude-exports-${datetime}.zip`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
