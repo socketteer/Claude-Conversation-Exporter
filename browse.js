@@ -378,15 +378,15 @@ function displayConversations() {
     });
   });
 
-  // Add checkbox listeners
+  // Add checkbox listeners (use 'click' instead of 'change' to capture shift key)
   document.querySelectorAll('.conversation-checkbox').forEach(checkbox => {
-    checkbox.addEventListener('change', handleCheckboxChange);
+    checkbox.addEventListener('click', handleCheckboxChange);
   });
 
   // Add select all checkbox listener
   const selectAllCheckbox = document.getElementById('selectAll');
   if (selectAllCheckbox) {
-    selectAllCheckbox.addEventListener('change', handleSelectAll);
+    selectAllCheckbox.addEventListener('click', handleSelectAll);
   }
 
   // Add sortable header click listeners
