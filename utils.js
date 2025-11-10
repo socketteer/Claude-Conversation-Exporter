@@ -205,8 +205,25 @@ function extractArtifactsFromMessage(message) {
       if (content.type === 'tool_use' && content.display_content) {
         const displayContent = content.display_content;
 
-        // Check for json_block format
-        if (displayContent.type === 'json_block' && displayContent.json_block) {
+        // Check for code_block format (newer artifact format)
+        if (displayContent.type === 'code_block' && displayContent.code) {
+          const language = displayContent.language || 'txt';
+          const code = displayContent.code || '';
+          const filename = displayContent.filename || 'artifact';
+
+          // Extract title from filename (remove path and extension)
+          const title = filename.split('/').pop().replace(/\.[^.]+$/, '');
+
+          artifacts.push({
+            title: title || 'Untitled',
+            language: language,
+            type: isProgrammingLanguage(language) ? 'code' : 'document',
+            identifier: null,
+            content: code.trim(),
+          });
+        }
+        // Check for json_block format (older artifact format)
+        else if (displayContent.type === 'json_block' && displayContent.json_block) {
           try {
             const artifactData = JSON.parse(displayContent.json_block);
 
