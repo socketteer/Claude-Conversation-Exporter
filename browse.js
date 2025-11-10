@@ -51,6 +51,7 @@ let orgId = null;
 let currentSort = 'updated_desc';
 let sortStack = []; // Track multi-level sorting: [{field: 'name', direction: 'asc'}, ...]
 let selectedConversations = new Set(); // Track selected conversation IDs
+let lastCheckedIndex = null; // Track last checked checkbox for shift+click range selection
 
 // Model name mappings
 const MODEL_DISPLAY_NAMES = {
@@ -189,21 +190,24 @@ function getModelBadgeClass(model) {
 function applyFiltersAndSort() {
   const searchTerm = document.getElementById('searchInput').value.toLowerCase();
   const modelFilter = document.getElementById('modelFilter').value;
-  
+
   // Filter conversations
   filteredConversations = allConversations.filter(conv => {
-    const matchesSearch = !searchTerm || 
+    const matchesSearch = !searchTerm ||
       conv.name.toLowerCase().includes(searchTerm) ||
       (conv.summary && conv.summary.toLowerCase().includes(searchTerm));
-    
+
     const matchesModel = !modelFilter || conv.model === modelFilter;
-    
+
     return matchesSearch && matchesModel;
   });
-  
+
   // Sort conversations
   sortConversations();
-  
+
+  // Reset last checked index when list changes
+  lastCheckedIndex = null;
+
   // Update display
   displayConversations();
   updateStats();
@@ -314,11 +318,11 @@ function displayConversations() {
       <tbody>
   `;
   
-  filteredConversations.forEach(conv => {
+  filteredConversations.forEach((conv, index) => {
     const updatedDate = new Date(conv.updated_at).toLocaleDateString();
     const createdDate = new Date(conv.created_at).toLocaleDateString();
     const modelBadgeClass = getModelBadgeClass(conv.model);
-    
+
     html += `
       <tr data-id="${conv.uuid}">
         <td>
@@ -346,7 +350,7 @@ function displayConversations() {
           </div>
         </td>
         <td class="checkbox-col">
-          <input type="checkbox" class="conversation-checkbox" data-id="${conv.uuid}" ${selectedConversations.has(conv.uuid) ? 'checked' : ''}>
+          <input type="checkbox" class="conversation-checkbox" data-id="${conv.uuid}" data-index="${index}" ${selectedConversations.has(conv.uuid) ? 'checked' : ''}>
         </td>
       </tr>
     `;
@@ -401,13 +405,42 @@ function displayConversations() {
 
 // Handle individual checkbox change
 function handleCheckboxChange(e) {
-  const conversationId = e.target.dataset.id;
+  const checkbox = e.target;
+  const conversationId = checkbox.dataset.id;
+  const currentIndex = parseInt(checkbox.dataset.index);
 
-  if (e.target.checked) {
-    selectedConversations.add(conversationId);
+  // Handle shift+click for range selection
+  if (e.shiftKey && lastCheckedIndex !== null) {
+    const start = Math.min(lastCheckedIndex, currentIndex);
+    const end = Math.max(lastCheckedIndex, currentIndex);
+
+    // Get all checkboxes and select/deselect the range
+    const checkboxes = document.querySelectorAll('.conversation-checkbox');
+    const isChecking = checkbox.checked;
+
+    for (let i = start; i <= end; i++) {
+      const cb = checkboxes[i];
+      if (cb) {
+        cb.checked = isChecking;
+        const id = cb.dataset.id;
+        if (isChecking) {
+          selectedConversations.add(id);
+        } else {
+          selectedConversations.delete(id);
+        }
+      }
+    }
   } else {
-    selectedConversations.delete(conversationId);
+    // Normal single checkbox toggle
+    if (checkbox.checked) {
+      selectedConversations.add(conversationId);
+    } else {
+      selectedConversations.delete(conversationId);
+    }
   }
+
+  // Update last checked index
+  lastCheckedIndex = currentIndex;
 
   updateExportButtonText();
   updateSelectAllCheckbox();
@@ -430,6 +463,9 @@ function handleSelectAll(e) {
     });
     selectedConversations.clear();
   }
+
+  // Reset last checked index when using select all
+  lastCheckedIndex = null;
 
   updateExportButtonText();
 }
