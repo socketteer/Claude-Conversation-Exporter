@@ -41,50 +41,35 @@ files_modified=0
 links_replaced=0
 
 # Find all markdown files in the chats directory
-while IFS= read -r -d '' chat_file; do
-    ((total_files++))
-    file_modified=false
+find "$CHATS_DIR" -name "*.md" -type f | while read -r chat_file; do
+    total_files=$((total_files + 1))
 
-    # Create a temporary file
-    temp_file=$(mktemp)
+    # Count matches before replacing
+    matches=$(grep -c "computer:///mnt/user-data/outputs/" "$chat_file" 2>/dev/null || echo "0")
 
-    # Process the file line by line
-    while IFS= read -r line; do
-        # Check if line contains artifact link pattern: computer:///mnt/user-data/outputs/
-        if [[ "$line" =~ computer:///mnt/user-data/outputs/([^)]+) ]]; then
-            filename="${BASH_REMATCH[1]}"
+    if [ "$matches" -gt 0 ]; then
+        # Create backup
+        cp "$chat_file" "$chat_file.bak"
 
-            # Calculate relative path from chat file to artifacts directory
-            # Get the relative path from the chat file's directory to the artifacts directory
-            chat_dir=$(dirname "$chat_file")
-            rel_path=$(realpath --relative-to="$chat_dir" "$ARTIFACTS_DIR")
+        # Calculate relative path from chat file to artifacts directory
+        chat_dir=$(dirname "$chat_file")
+        rel_path=$(realpath --relative-to="$chat_dir" "$ARTIFACTS_DIR" 2>/dev/null || echo "../../Artifacts")
 
-            # Replace the link with relative path to artifact
-            new_link="file://$rel_path/$filename"
-            new_line="${line//computer:\/\/\/mnt\/user-data\/outputs\/$filename/$new_link}"
+        # Replace artifact links with relative file:// paths
+        sed -i "s|computer:///mnt/user-data/outputs/\([^)]*\)|file://$rel_path/\1|g" "$chat_file"
 
-            if [ "$new_line" != "$line" ]; then
-                ((links_replaced++))
-                file_modified=true
-                echo -e "${YELLOW}  Found artifact link: $filename${NC}"
-            fi
-
-            echo "$new_line" >> "$temp_file"
+        # Check if file actually changed
+        if ! cmp -s "$chat_file" "$chat_file.bak"; then
+            files_modified=$((files_modified + 1))
+            links_replaced=$((links_replaced + matches))
+            echo -e "${GREEN}✓ Updated: $(basename "$chat_file") ($matches links)${NC}"
+            rm "$chat_file.bak"
         else
-            echo "$line" >> "$temp_file"
+            # No changes, restore backup
+            mv "$chat_file.bak" "$chat_file"
         fi
-    done < "$chat_file"
-
-    # If file was modified, replace the original
-    if [ "$file_modified" = true ]; then
-        mv "$temp_file" "$chat_file"
-        ((files_modified++))
-        echo -e "${GREEN}✓ Updated: $(basename "$chat_file")${NC}"
-    else
-        rm "$temp_file"
     fi
-
-done < <(find "$CHATS_DIR" -name "*.md" -type f -print0)
+done
 
 echo ""
 echo "================================"

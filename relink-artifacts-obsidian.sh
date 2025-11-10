@@ -41,57 +41,37 @@ files_modified=0
 links_replaced=0
 
 # Find all markdown files in the chats directory
-while IFS= read -r -d '' chat_file; do
-    ((total_files++))
-    file_modified=false
+find "$CHATS_DIR" -name "*.md" -type f | while read -r chat_file; do
+    total_files=$((total_files + 1))
 
-    # Create a temporary file
-    temp_file=$(mktemp)
+    # Count matches before replacing
+    matches=$(grep -c "computer:///mnt/user-data/outputs/" "$chat_file" 2>/dev/null || echo "0")
 
-    # Process the file line by line
-    while IFS= read -r line; do
-        original_line="$line"
+    if [ "$matches" -gt 0 ]; then
+        # Create backup
+        cp "$chat_file" "$chat_file.bak"
 
-        # Check if line contains artifact link pattern: computer:///mnt/user-data/outputs/
-        # This regex handles both inline links [text](computer://...) and standalone links
-        while [[ "$line" =~ (.*)\[([^\]]*)\]\(computer:///mnt/user-data/outputs/([^)]+)\)(.*) ]]; do
-            before="${BASH_REMATCH[1]}"
-            link_text="${BASH_REMATCH[2]}"
-            filename="${BASH_REMATCH[3]}"
-            after="${BASH_REMATCH[4]}"
+        # Replace artifact links with Obsidian wikilinks
+        # Pattern: [View filename.ext](computer:///mnt/user-data/outputs/filename.ext)
+        # becomes: [[Artifacts/filename.ext]]
+        sed -i 's|\[View \([^]]*\)\](computer:///mnt/user-data/outputs/\([^)]*\))|[[Artifacts/\2]]|g' "$chat_file"
 
-            # Use the filename as the link text if the original text is "View ..."
-            if [[ "$link_text" == View* ]]; then
-                # Create a wikilink with path
-                new_link="[[Artifacts/$filename]]"
-            else
-                # Keep original link text with wikilink alias
-                new_link="[[Artifacts/$filename|$link_text]]"
-            fi
+        # Pattern: [text](computer:///mnt/user-data/outputs/filename.ext)
+        # becomes: [[Artifacts/filename.ext|text]]
+        sed -i 's|\[\([^]]*\)\](computer:///mnt/user-data/outputs/\([^)]*\))|[[Artifacts/\2|\1]]|g' "$chat_file"
 
-            # Reconstruct the line with the new link
-            line="${before}${new_link}${after}"
-            ((links_replaced++))
-            file_modified=true
-        done
-
-        if [ "$line" != "$original_line" ]; then
-            echo -e "${YELLOW}  Replaced links in line${NC}"
+        # Check if file actually changed
+        if ! cmp -s "$chat_file" "$chat_file.bak"; then
+            files_modified=$((files_modified + 1))
+            links_replaced=$((links_replaced + matches))
+            echo -e "${GREEN}✓ Updated: $(basename "$chat_file") ($matches links)${NC}"
+            rm "$chat_file.bak"
+        else
+            # No changes, restore backup
+            mv "$chat_file.bak" "$chat_file"
         fi
-
-        echo "$line" >> "$temp_file"
-    done < "$chat_file"
-
-    # If file was modified, replace the original
-    if [ "$file_modified" = true ]; then
-        mv "$temp_file" "$chat_file"
-        ((files_modified++))
-        echo -e "${GREEN}✓ Updated: $(basename "$chat_file")${NC}"
-    else
-        rm "$temp_file"
     fi
-
-done < <(find "$CHATS_DIR" -name "*.md" -type f -print0)
+done
 
 echo ""
 echo "================================"
