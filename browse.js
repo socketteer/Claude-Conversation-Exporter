@@ -557,21 +557,20 @@ async function exportConversation(conversationId, conversationName) {
           zip.file(conversationFilename, conversationContent);
         }
 
-        // Add artifact files based on flatten option
-        if (flattenArtifacts) {
-          // Flatten: all artifacts in same folder as conversation (or root if no chats)
-          for (const artifact of artifactFiles) {
-            // If no chats, prefix with conversation name
-            const filename = (includeChats === false)
-              ? `${conversationName}_${artifact.filename}`
-              : artifact.filename;
-            zip.file(filename, artifact.content);
-          }
-        } else {
-          // Not flattened: use artifacts subfolder if chats are included
+        // Add artifact files - nested and/or flat
+        // Nested: create artifacts subfolder
+        if (extractArtifacts) {
           const artifactsFolder = includeChats !== false ? zip.folder('artifacts') : zip;
           for (const artifact of artifactFiles) {
             artifactsFolder.file(artifact.filename, artifact.content);
+          }
+        }
+
+        // Flat: add artifacts with conversation name prefix in same folder
+        if (flattenArtifacts) {
+          for (const artifact of artifactFiles) {
+            const filename = `${conversationName}_${artifact.filename}`;
+            zip.file(filename, artifact.content);
           }
         }
 
@@ -755,22 +754,21 @@ async function exportAllFiltered() {
               convFolder.file(filename, content);
             }
 
-            // Add artifact files based on flatten option
+            // Add artifact files - nested and/or flat
             if (artifactFiles.length > 0) {
-              if (flattenArtifacts) {
-                // Flatten: all artifacts in same folder as conversation
-                for (const artifact of artifactFiles) {
-                  // If no chats, prefix with conversation name
-                  const artifactFilename = (includeChats === false)
-                    ? `${safeName}_${artifact.filename}`
-                    : artifact.filename;
-                  convFolder.file(artifactFilename, artifact.content);
-                }
-              } else {
-                // Not flattened: use artifacts subfolder if chats are included
+              // Nested: create artifacts subfolder
+              if (extractArtifacts) {
                 const artifactsFolder = includeChats !== false ? convFolder.folder('artifacts') : convFolder;
                 for (const artifact of artifactFiles) {
                   artifactsFolder.file(artifact.filename, artifact.content);
+                }
+              }
+
+              // Flat: add artifacts with conversation name prefix in same folder
+              if (flattenArtifacts) {
+                for (const artifact of artifactFiles) {
+                  const artifactFilename = `${safeName}_${artifact.filename}`;
+                  convFolder.file(artifactFilename, artifact.content);
                 }
               }
             }

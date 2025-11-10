@@ -108,21 +108,20 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
               zip.file(conversationFilename, conversationContent);
             }
 
-            // Add artifact files based on flatten option
-            if (request.flattenArtifacts) {
-              // Flatten: all artifacts in same folder as conversation (or root if no chats)
-              for (const artifact of artifactFiles) {
-                // If no chats, prefix with conversation name
-                const filename = (request.includeChats === false)
-                  ? `${data.name || request.conversationId}_${artifact.filename}`
-                  : artifact.filename;
-                zip.file(filename, artifact.content);
-              }
-            } else {
-              // Not flattened: use artifacts subfolder if chats are included
+            // Add artifact files - nested and/or flat
+            // Nested: create artifacts subfolder
+            if (request.extractArtifacts) {
               const artifactsFolder = request.includeChats !== false ? zip.folder('artifacts') : zip;
               for (const artifact of artifactFiles) {
                 artifactsFolder.file(artifact.filename, artifact.content);
+              }
+            }
+
+            // Flat: add artifacts with conversation name prefix in same folder
+            if (request.flattenArtifacts) {
+              for (const artifact of artifactFiles) {
+                const filename = `${data.name || request.conversationId}_${artifact.filename}`;
+                zip.file(filename, artifact.content);
               }
             }
 
@@ -270,22 +269,21 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                 convFolder.file(conversationFilename, conversationContent);
               }
 
-              // Add artifact files based on flatten option
+              // Add artifact files - nested and/or flat
               if (artifactFiles.length > 0) {
-                if (request.flattenArtifacts) {
-                  // Flatten: all artifacts in same folder as conversation
-                  for (const artifact of artifactFiles) {
-                    // If no chats, prefix with conversation name
-                    const artifactFilename = (request.includeChats === false)
-                      ? `${folderName}_${artifact.filename}`
-                      : artifact.filename;
-                    convFolder.file(artifactFilename, artifact.content);
-                  }
-                } else {
-                  // Not flattened: use artifacts subfolder if chats are included
+                // Nested: create artifacts subfolder
+                if (request.extractArtifacts) {
                   const artifactsFolder = request.includeChats !== false ? convFolder.folder('artifacts') : convFolder;
                   for (const artifact of artifactFiles) {
                     artifactsFolder.file(artifact.filename, artifact.content);
+                  }
+                }
+
+                // Flat: add artifacts with conversation name prefix in same folder
+                if (request.flattenArtifacts) {
+                  for (const artifact of artifactFiles) {
+                    const artifactFilename = `${folderName}_${artifact.filename}`;
+                    convFolder.file(artifactFilename, artifact.content);
                   }
                 }
               }
