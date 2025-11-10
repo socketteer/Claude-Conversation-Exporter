@@ -423,6 +423,9 @@ function handleCheckboxChange(e) {
 
     console.log('Shift+click range selection:', {start, end});
 
+    // Show visual feedback
+    showToast(`Selecting range: ${start} to ${end} (${end - start + 1} items)`);
+
     // Get all checkboxes and select/deselect the range
     const checkboxes = document.querySelectorAll('.conversation-checkbox');
     const isChecking = checkbox.checked;
