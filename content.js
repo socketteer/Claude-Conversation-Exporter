@@ -80,7 +80,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         data.model = inferModel(data);
         
         // Check if we need to extract artifacts to separate files
-        if (request.extractArtifacts) {
+        if (request.extractArtifacts || request.flattenArtifacts) {
           // Extract artifacts
           const artifactFiles = extractArtifactFiles(data, request.artifactFormat || 'original');
 
@@ -224,8 +224,8 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
           console.log('Downloading all conversations as JSON:', filename);
           downloadFile(JSON.stringify(conversations, null, 2), filename);
           sendResponse({ success: true, count: conversations.length });
-        } else if (request.extractArtifacts) {
-          // When extracting artifacts, always create a ZIP
+        } else if (request.extractArtifacts || request.flattenArtifacts) {
+          // When extracting artifacts (nested or flat), always create a ZIP
           const zip = new JSZip();
           let processed = 0;
           let included = 0;

@@ -576,7 +576,7 @@ async function exportConversation(conversationId, conversationName) {
     data.model = inferModel(data);
 
     // Check if we need to extract artifacts to separate files
-    if (extractArtifacts) {
+    if (extractArtifacts || flattenArtifacts) {
       const artifactFiles = extractArtifactFiles(data, artifactFormat);
 
       if (artifactFiles.length > 0) {
@@ -792,8 +792,8 @@ async function exportAllFiltered() {
               filename = `${safeName}.json`;
           }
 
-          // If extracting artifacts, create folder structure
-          if (extractArtifacts) {
+          // If extracting artifacts (nested or flat), create folder structure
+          if (extractArtifacts || flattenArtifacts) {
             const convFolder = zip.folder(safeName);
 
             // Add conversation file only if includeChats is true
