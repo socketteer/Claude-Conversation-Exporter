@@ -1,8 +1,8 @@
 {
     "manifest_version": 3,
-    "name": "Claude Conversation Exporter",
-    "version": "1.0.2",
-    "description": "Export your Claude.ai conversations with full message history",
+    "name": "Claude Exporter",
+    "version": "1.0.3",
+    "description": "Export conversations and artifacts from Claude.ai",
       "permissions": [
     "activeTab",
     "storage",
