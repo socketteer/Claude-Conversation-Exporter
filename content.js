@@ -158,7 +158,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
             console.log('No content to export (chats disabled, artifacts not extracted)');
             sendResponse({
               success: false,
-              error: 'Nothing to export. Enable "Include conversation text" or "Extract artifacts to separate files".'
+              error: 'Nothing to export. Enable "Include conversation text" or "Artifact files".'
             });
           } else {
             let content, filename, type;
