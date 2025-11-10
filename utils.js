@@ -402,5 +402,45 @@ function isProgrammingLanguage(language) {
   return programmingLanguages.includes(language.toLowerCase());
 }
 
+// Extract all artifacts from a conversation into separate files
+function extractArtifactFiles(data) {
+  const artifactFiles = [];
+  const usedFilenames = new Set();
+
+  // Get only the current branch messages
+  const branchMessages = getCurrentBranch(data);
+
+  for (const message of branchMessages) {
+    const artifacts = extractArtifactsFromMessage(message);
+
+    for (const artifact of artifacts) {
+      // Generate filename from title and language
+      let baseFilename = artifact.title || 'artifact';
+      // Sanitize filename (remove invalid characters)
+      baseFilename = baseFilename.replace(/[<>:"/\\|?*]/g, '_');
+
+      // Get extension from language
+      const extension = getLanguageExtension(artifact.language);
+      let filename = `${baseFilename}${extension}`;
+
+      // Handle duplicate filenames
+      let counter = 1;
+      while (usedFilenames.has(filename)) {
+        filename = `${baseFilename}_${counter}${extension}`;
+        counter++;
+      }
+
+      usedFilenames.add(filename);
+
+      artifactFiles.push({
+        filename: filename,
+        content: artifact.content
+      });
+    }
+  }
+
+  return artifactFiles;
+}
+
 // Functions are available globally in the browser context
 // No need for module.exports in browser extensions

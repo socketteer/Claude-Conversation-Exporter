@@ -79,28 +79,100 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         // Infer model if null
         data.model = inferModel(data);
         
-        let content, filename, type;
-        
-        switch (request.format) {
-          case 'markdown':
-            content = convertToMarkdown(data, request.includeMetadata, request.conversationId, request.includeArtifacts);
-            filename = `${data.name || request.conversationId}.md`;
-            type = 'text/markdown';
-            break;
-          case 'text':
-            content = convertToText(data, request.includeMetadata, request.includeArtifacts);
-            filename = `${data.name || request.conversationId}.txt`;
-            type = 'text/plain';
-            break;
-          default:
-            content = JSON.stringify(data, null, 2);
-            filename = `${data.name || request.conversationId}.json`;
-            type = 'application/json';
+        // Check if we need to extract artifacts to separate files
+        if (request.extractArtifacts) {
+          // Extract artifacts
+          const artifactFiles = extractArtifactFiles(data);
+
+          if (artifactFiles.length > 0) {
+            // Create a ZIP with the conversation and artifacts
+            const zip = new JSZip();
+
+            // Add conversation file
+            let conversationContent, conversationFilename;
+            switch (request.format) {
+              case 'markdown':
+                conversationContent = convertToMarkdown(data, request.includeMetadata, request.conversationId, request.includeArtifacts);
+                conversationFilename = `${data.name || request.conversationId}.md`;
+                break;
+              case 'text':
+                conversationContent = convertToText(data, request.includeMetadata, request.includeArtifacts);
+                conversationFilename = `${data.name || request.conversationId}.txt`;
+                break;
+              default:
+                conversationContent = JSON.stringify(data, null, 2);
+                conversationFilename = `${data.name || request.conversationId}.json`;
+            }
+
+            zip.file(conversationFilename, conversationContent);
+
+            // Add artifact files to an artifacts subfolder
+            const artifactsFolder = zip.folder('artifacts');
+            for (const artifact of artifactFiles) {
+              artifactsFolder.file(artifact.filename, artifact.content);
+            }
+
+            // Generate and download ZIP
+            zip.generateAsync({ type: 'blob' }).then(blob => {
+              const url = URL.createObjectURL(blob);
+              const a = document.createElement('a');
+              a.href = url;
+              a.download = `${data.name || request.conversationId}.zip`;
+              document.body.appendChild(a);
+              a.click();
+              document.body.removeChild(a);
+              URL.revokeObjectURL(url);
+            });
+
+            console.log(`Downloading ZIP with conversation and ${artifactFiles.length} artifact(s)`);
+            sendResponse({ success: true });
+          } else {
+            // No artifacts found, just export conversation normally
+            let content, filename, type;
+            switch (request.format) {
+              case 'markdown':
+                content = convertToMarkdown(data, request.includeMetadata, request.conversationId, request.includeArtifacts);
+                filename = `${data.name || request.conversationId}.md`;
+                type = 'text/markdown';
+                break;
+              case 'text':
+                content = convertToText(data, request.includeMetadata, request.includeArtifacts);
+                filename = `${data.name || request.conversationId}.txt`;
+                type = 'text/plain';
+                break;
+              default:
+                content = JSON.stringify(data, null, 2);
+                filename = `${data.name || request.conversationId}.json`;
+                type = 'application/json';
+            }
+            console.log('No artifacts found. Downloading file:', filename);
+            downloadFile(content, filename, type);
+            sendResponse({ success: true });
+          }
+        } else {
+          // Normal export without artifact extraction
+          let content, filename, type;
+          switch (request.format) {
+            case 'markdown':
+              content = convertToMarkdown(data, request.includeMetadata, request.conversationId, request.includeArtifacts);
+              filename = `${data.name || request.conversationId}.md`;
+              type = 'text/markdown';
+              break;
+            case 'text':
+              content = convertToText(data, request.includeMetadata, request.includeArtifacts);
+              filename = `${data.name || request.conversationId}.txt`;
+              type = 'text/plain';
+              break;
+            default:
+              content = JSON.stringify(data, null, 2);
+              filename = `${data.name || request.conversationId}.json`;
+              type = 'application/json';
+          }
+
+          console.log('Downloading file:', filename);
+          downloadFile(content, filename, type);
+          sendResponse({ success: true });
         }
-        
-        console.log('Downloading file:', filename);
-        downloadFile(content, filename, type);
-        sendResponse({ success: true });
       })
       .catch(error => {
         console.error('Export conversation error:', error);
@@ -121,27 +193,101 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       .then(async conversations => {
         console.log(`Fetched ${conversations.length} conversations`);
         
-        if (request.format === 'json') {
-          // For JSON, export as a single file with all conversations
+        if (request.format === 'json' && !request.extractArtifacts) {
+          // For JSON without artifact extraction, export as a single file
           const filename = `all-conversations-${new Date().toISOString().split('T')[0]}.json`;
           console.log('Downloading all conversations as JSON:', filename);
           downloadFile(JSON.stringify(conversations, null, 2), filename);
           sendResponse({ success: true, count: conversations.length });
-        } else {
-          // For other formats, create individual files
+        } else if (request.extractArtifacts) {
+          // When extracting artifacts, always create a ZIP
+          const zip = new JSZip();
           let count = 0;
           let errors = [];
-          
+
           for (const conv of conversations) {
             try {
               console.log(`Fetching full conversation ${count + 1}/${conversations.length}: ${conv.uuid}`);
               const fullConv = await fetchConversation(request.orgId, conv.uuid);
-              
+
               // Infer model if null
               fullConv.model = inferModel(fullConv);
-              
+
+              // Sanitize folder name
+              const folderName = (conv.name || conv.uuid).replace(/[<>:"/\\|?*]/g, '_');
+              const convFolder = zip.folder(folderName);
+
+              // Add conversation file
+              let conversationContent, conversationFilename;
+              if (request.format === 'markdown') {
+                conversationContent = convertToMarkdown(fullConv, request.includeMetadata, conv.uuid, request.includeArtifacts);
+                conversationFilename = `${folderName}.md`;
+              } else if (request.format === 'text') {
+                conversationContent = convertToText(fullConv, request.includeMetadata, request.includeArtifacts);
+                conversationFilename = `${folderName}.txt`;
+              } else {
+                conversationContent = JSON.stringify(fullConv, null, 2);
+                conversationFilename = `${folderName}.json`;
+              }
+
+              convFolder.file(conversationFilename, conversationContent);
+
+              // Extract and add artifact files
+              const artifactFiles = extractArtifactFiles(fullConv);
+              if (artifactFiles.length > 0) {
+                const artifactsFolder = convFolder.folder('artifacts');
+                for (const artifact of artifactFiles) {
+                  artifactsFolder.file(artifact.filename, artifact.content);
+                }
+              }
+
+              count++;
+
+              // Add a small delay to avoid overwhelming the API
+              await new Promise(resolve => setTimeout(resolve, 500));
+            } catch (error) {
+              console.error(`Failed to export conversation ${conv.uuid}:`, error);
+              errors.push(`${conv.name || conv.uuid}: ${error.message}`);
+            }
+          }
+
+          // Generate and download ZIP
+          zip.generateAsync({ type: 'blob' }).then(blob => {
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `all-conversations-${new Date().toISOString().split('T')[0]}.zip`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+          });
+
+          if (errors.length > 0) {
+            console.warn('Some conversations failed to export:', errors);
+            sendResponse({
+              success: true,
+              count,
+              warnings: `Exported ${count}/${conversations.length} conversations. Some failed: ${errors.join('; ')}`
+            });
+          } else {
+            sendResponse({ success: true, count });
+          }
+        } else {
+          // For other formats without artifact extraction, create individual files
+          let count = 0;
+          let errors = [];
+
+          for (const conv of conversations) {
+            try {
+              console.log(`Fetching full conversation ${count + 1}/${conversations.length}: ${conv.uuid}`);
+              const fullConv = await fetchConversation(request.orgId, conv.uuid);
+
+              // Infer model if null
+              fullConv.model = inferModel(fullConv);
+
               let content, filename, type;
-              
+
               if (request.format === 'markdown') {
                 content = convertToMarkdown(fullConv, request.includeMetadata, conv.uuid, request.includeArtifacts);
                 filename = `${conv.name || conv.uuid}.md`;
@@ -151,10 +297,10 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                 filename = `${conv.name || conv.uuid}.txt`;
                 type = 'text/plain';
               }
-              
+
               downloadFile(content, filename, type);
               count++;
-              
+
               // Add a small delay to avoid overwhelming the API
               await new Promise(resolve => setTimeout(resolve, 500));
             } catch (error) {
@@ -162,13 +308,13 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
               errors.push(`${conv.name || conv.uuid}: ${error.message}`);
             }
           }
-          
+
           if (errors.length > 0) {
             console.warn('Some conversations failed to export:', errors);
-            sendResponse({ 
-              success: true, 
-              count, 
-              warnings: `Exported ${count}/${conversations.length} conversations. Some failed: ${errors.join('; ')}` 
+            sendResponse({
+              success: true,
+              count,
+              warnings: `Exported ${count}/${conversations.length} conversations. Some failed: ${errors.join('; ')}`
             });
           } else {
             sendResponse({ success: true, count });
