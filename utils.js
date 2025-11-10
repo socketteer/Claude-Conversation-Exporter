@@ -405,8 +405,93 @@ function isProgrammingLanguage(language) {
   return programmingLanguages.includes(language.toLowerCase());
 }
 
+// Convert artifact content and filename based on selected format
+function convertArtifactFormat(content, language, baseFilename, format) {
+  // Get original extension
+  const originalExtension = getFileExtension(language);
+
+  // Keep code files and non-markdown files in original format
+  if (isProgrammingLanguage(language) || originalExtension !== '.md') {
+    return {
+      filename: `${baseFilename}${originalExtension}`,
+      content: content
+    };
+  }
+
+  // For markdown documents, convert based on selected format
+  switch (format) {
+    case 'markdown':
+    case 'original':
+      // Keep as markdown
+      return {
+        filename: `${baseFilename}.md`,
+        content: content
+      };
+
+    case 'text':
+      // Convert to plain text (remove markdown formatting)
+      let plainText = content;
+
+      // Remove code blocks
+      plainText = plainText.replace(/```[\s\S]*?```/g, (match) => {
+        // Extract just the code content without backticks and language
+        return match.replace(/```\w*\n?/, '').replace(/\n?```$/, '');
+      });
+
+      // Remove inline code
+      plainText = plainText.replace(/`([^`]+)`/g, '$1');
+
+      // Remove bold/italic
+      plainText = plainText.replace(/\*\*([^*]+)\*\*/g, '$1');
+      plainText = plainText.replace(/\*([^*]+)\*/g, '$1');
+      plainText = plainText.replace(/__([^_]+)__/g, '$1');
+      plainText = plainText.replace(/_([^_]+)_/g, '$1');
+
+      // Remove headers (replace with just the text)
+      plainText = plainText.replace(/^#{1,6}\s+(.+)$/gm, '$1');
+
+      // Remove links but keep text
+      plainText = plainText.replace(/\[([^\]]+)\]\([^\)]+\)/g, '$1');
+
+      // Remove images
+      plainText = plainText.replace(/!\[([^\]]*)\]\([^\)]+\)/g, '');
+
+      // Remove horizontal rules
+      plainText = plainText.replace(/^[-*_]{3,}$/gm, '');
+
+      // Clean up excessive newlines
+      plainText = plainText.replace(/\n{3,}/g, '\n\n');
+
+      return {
+        filename: `${baseFilename}.txt`,
+        content: plainText.trim()
+      };
+
+    case 'json':
+      // Convert to JSON format
+      const jsonData = {
+        title: baseFilename,
+        language: language,
+        content: content,
+        format: 'markdown'
+      };
+
+      return {
+        filename: `${baseFilename}.json`,
+        content: JSON.stringify(jsonData, null, 2)
+      };
+
+    default:
+      // Default to original format
+      return {
+        filename: `${baseFilename}${originalExtension}`,
+        content: content
+      };
+  }
+}
+
 // Extract all artifacts from a conversation into separate files
-function extractArtifactFiles(data) {
+function extractArtifactFiles(data, artifactFormat = 'original') {
   const artifactFiles = [];
   const usedFilenames = new Set();
 
@@ -422,14 +507,24 @@ function extractArtifactFiles(data) {
       // Sanitize filename (remove invalid characters)
       baseFilename = baseFilename.replace(/[<>:"/\\|?*]/g, '_');
 
-      // Get extension from language
-      const extension = getFileExtension(artifact.language);
-      let filename = `${baseFilename}${extension}`;
+      // Convert artifact based on selected format
+      const converted = convertArtifactFormat(
+        artifact.content,
+        artifact.language,
+        baseFilename,
+        artifactFormat
+      );
+
+      let filename = converted.filename;
 
       // Handle duplicate filenames
       let counter = 1;
+      const extensionMatch = filename.match(/(\.[^.]+)$/);
+      const extension = extensionMatch ? extensionMatch[1] : '';
+      const nameWithoutExt = extension ? filename.slice(0, -extension.length) : filename;
+
       while (usedFilenames.has(filename)) {
-        filename = `${baseFilename}_${counter}${extension}`;
+        filename = `${nameWithoutExt}_${counter}${extension}`;
         counter++;
       }
 
@@ -437,7 +532,7 @@ function extractArtifactFiles(data) {
 
       artifactFiles.push({
         filename: filename,
-        content: artifact.content
+        content: converted.content
       });
     }
   }

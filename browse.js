@@ -504,6 +504,8 @@ async function exportConversation(conversationId, conversationName) {
   const includeMetadata = document.getElementById('includeMetadata').checked;
   const includeArtifacts = document.getElementById('includeArtifacts').checked;
   const extractArtifacts = document.getElementById('extractArtifacts').checked;
+  const artifactFormat = document.getElementById('artifactFormat').value;
+  const flattenArtifacts = document.getElementById('flattenArtifacts').checked;
 
   try {
     showToast(`Exporting ${conversationName}...`);
@@ -529,7 +531,7 @@ async function exportConversation(conversationId, conversationName) {
 
     // Check if we need to extract artifacts to separate files
     if (extractArtifacts) {
-      const artifactFiles = extractArtifactFiles(data);
+      const artifactFiles = extractArtifactFiles(data, artifactFormat);
 
       if (artifactFiles.length > 0) {
         // Create a ZIP with artifacts (and optionally conversation)
@@ -555,10 +557,22 @@ async function exportConversation(conversationId, conversationName) {
           zip.file(conversationFilename, conversationContent);
         }
 
-        // Add artifact files to root or artifacts subfolder
-        const artifactsFolder = includeChats !== false ? zip.folder('artifacts') : zip;
-        for (const artifact of artifactFiles) {
-          artifactsFolder.file(artifact.filename, artifact.content);
+        // Add artifact files based on flatten option
+        if (flattenArtifacts) {
+          // Flatten: all artifacts in same folder as conversation (or root if no chats)
+          for (const artifact of artifactFiles) {
+            // If no chats, prefix with conversation name
+            const filename = (includeChats === false)
+              ? `${conversationName}_${artifact.filename}`
+              : artifact.filename;
+            zip.file(filename, artifact.content);
+          }
+        } else {
+          // Not flattened: use artifacts subfolder if chats are included
+          const artifactsFolder = includeChats !== false ? zip.folder('artifacts') : zip;
+          for (const artifact of artifactFiles) {
+            artifactsFolder.file(artifact.filename, artifact.content);
+          }
         }
 
         // Generate and download ZIP
@@ -636,6 +650,8 @@ async function exportAllFiltered() {
   const includeMetadata = document.getElementById('includeMetadata').checked;
   const includeArtifacts = document.getElementById('includeArtifacts').checked;
   const extractArtifacts = document.getElementById('extractArtifacts').checked;
+  const artifactFormat = document.getElementById('artifactFormat').value;
+  const flattenArtifacts = document.getElementById('flattenArtifacts').checked;
 
   const button = document.getElementById('exportAllBtn');
   button.disabled = true;
@@ -704,7 +720,7 @@ async function exportAllFiltered() {
           data.model = inferModel(data);
 
           // Extract artifacts first to check if this conversation should be included
-          const artifactFiles = extractArtifactFiles(data);
+          const artifactFiles = extractArtifactFiles(data, artifactFormat);
 
           // If chats are disabled and no artifacts, skip this conversation
           if (includeChats === false && artifactFiles.length === 0) {
@@ -739,11 +755,23 @@ async function exportAllFiltered() {
               convFolder.file(filename, content);
             }
 
-            // Add artifact files
+            // Add artifact files based on flatten option
             if (artifactFiles.length > 0) {
-              const artifactsFolder = includeChats !== false ? convFolder.folder('artifacts') : convFolder;
-              for (const artifact of artifactFiles) {
-                artifactsFolder.file(artifact.filename, artifact.content);
+              if (flattenArtifacts) {
+                // Flatten: all artifacts in same folder as conversation
+                for (const artifact of artifactFiles) {
+                  // If no chats, prefix with conversation name
+                  const artifactFilename = (includeChats === false)
+                    ? `${safeName}_${artifact.filename}`
+                    : artifact.filename;
+                  convFolder.file(artifactFilename, artifact.content);
+                }
+              } else {
+                // Not flattened: use artifacts subfolder if chats are included
+                const artifactsFolder = includeChats !== false ? convFolder.folder('artifacts') : convFolder;
+                for (const artifact of artifactFiles) {
+                  artifactsFolder.file(artifact.filename, artifact.content);
+                }
               }
             }
           } else {

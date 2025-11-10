@@ -82,7 +82,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         // Check if we need to extract artifacts to separate files
         if (request.extractArtifacts) {
           // Extract artifacts
-          const artifactFiles = extractArtifactFiles(data);
+          const artifactFiles = extractArtifactFiles(data, request.artifactFormat || 'original');
 
           if (artifactFiles.length > 0) {
             // Create a ZIP with artifacts (and optionally conversation)
@@ -108,10 +108,22 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
               zip.file(conversationFilename, conversationContent);
             }
 
-            // Add artifact files to root or artifacts subfolder
-            const artifactsFolder = request.includeChats !== false ? zip.folder('artifacts') : zip;
-            for (const artifact of artifactFiles) {
-              artifactsFolder.file(artifact.filename, artifact.content);
+            // Add artifact files based on flatten option
+            if (request.flattenArtifacts) {
+              // Flatten: all artifacts in same folder as conversation (or root if no chats)
+              for (const artifact of artifactFiles) {
+                // If no chats, prefix with conversation name
+                const filename = (request.includeChats === false)
+                  ? `${data.name || request.conversationId}_${artifact.filename}`
+                  : artifact.filename;
+                zip.file(filename, artifact.content);
+              }
+            } else {
+              // Not flattened: use artifacts subfolder if chats are included
+              const artifactsFolder = request.includeChats !== false ? zip.folder('artifacts') : zip;
+              for (const artifact of artifactFiles) {
+                artifactsFolder.file(artifact.filename, artifact.content);
+              }
             }
 
             // Generate and download ZIP
@@ -227,7 +239,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
               fullConv.model = inferModel(fullConv);
 
               // Extract artifacts first to check if this conversation should be included
-              const artifactFiles = extractArtifactFiles(fullConv);
+              const artifactFiles = extractArtifactFiles(fullConv, request.artifactFormat || 'original');
 
               // If chats are disabled and no artifacts, skip this conversation
               if (request.includeChats === false && artifactFiles.length === 0) {
@@ -258,11 +270,23 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                 convFolder.file(conversationFilename, conversationContent);
               }
 
-              // Add artifact files
+              // Add artifact files based on flatten option
               if (artifactFiles.length > 0) {
-                const artifactsFolder = request.includeChats !== false ? convFolder.folder('artifacts') : convFolder;
-                for (const artifact of artifactFiles) {
-                  artifactsFolder.file(artifact.filename, artifact.content);
+                if (request.flattenArtifacts) {
+                  // Flatten: all artifacts in same folder as conversation
+                  for (const artifact of artifactFiles) {
+                    // If no chats, prefix with conversation name
+                    const artifactFilename = (request.includeChats === false)
+                      ? `${folderName}_${artifact.filename}`
+                      : artifact.filename;
+                    convFolder.file(artifactFilename, artifact.content);
+                  }
+                } else {
+                  // Not flattened: use artifacts subfolder if chats are included
+                  const artifactsFolder = request.includeChats !== false ? convFolder.folder('artifacts') : convFolder;
+                  for (const artifact of artifactFiles) {
+                    artifactsFolder.file(artifact.filename, artifact.content);
+                  }
                 }
               }
 
