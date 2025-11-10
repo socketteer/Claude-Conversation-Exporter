@@ -32,7 +32,7 @@ function getCurrentBranch(data) {
 
 // Convert to markdown format
 function convertToMarkdown(data, includeMetadata, conversationId = null, includeArtifacts = true) {
-  console.log('🔧 UTILS.JS MODIFIED VERSION - conversationId:', conversationId);
+  console.log('🔧 convertToMarkdown - conversationId:', conversationId, 'includeArtifacts:', includeArtifacts);
   let markdown = `# ${data.name || 'Untitled Conversation'}\n\n`;
 
   if (includeMetadata) {
@@ -60,6 +60,9 @@ function convertToMarkdown(data, includeMetadata, conversationId = null, include
 
     // Extract artifacts from the entire message (handles both old and new formats)
     const messageArtifacts = includeArtifacts ? extractArtifactsFromMessage(message) : [];
+    if (messageArtifacts.length > 0) {
+      console.log('📦 Found', messageArtifacts.length, 'artifact(s) in message:', messageArtifacts.map(a => a.title));
+    }
 
     // Render message text (excluding tool_use and artifact tags)
     if (message.content) {
