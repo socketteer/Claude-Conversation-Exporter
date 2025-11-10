@@ -35,19 +35,17 @@ if [ ! -d "$ARTIFACTS_DIR" ]; then
     exit 1
 fi
 
-# Counter for statistics
-total_files=0
-files_modified=0
-links_replaced=0
-
 # Find all markdown files in the chats directory
 find "$CHATS_DIR" -name "*.md" -type f | while read -r chat_file; do
-    total_files=$((total_files + 1))
+    # Get the chat filename without extension
+    chat_name=$(basename "$chat_file" .md)
 
     # Count matches before replacing
     matches=$(grep -c "computer:///mnt/user-data/outputs/" "$chat_file" 2>/dev/null || echo "0")
 
     if [ "$matches" -gt 0 ]; then
+        echo "Processing: $(basename "$chat_file") - Found $matches artifact links"
+
         # Create backup
         cp "$chat_file" "$chat_file.bak"
 
@@ -55,13 +53,21 @@ find "$CHATS_DIR" -name "*.md" -type f | while read -r chat_file; do
         chat_dir=$(dirname "$chat_file")
         rel_path=$(realpath --relative-to="$chat_dir" "$ARTIFACTS_DIR" 2>/dev/null || echo "../../Artifacts")
 
-        # Replace artifact links with relative file:// paths
-        sed -i "s|computer:///mnt/user-data/outputs/\([^)]*\)|file://$rel_path/\1|g" "$chat_file"
+        # Use a temporary file for processing
+        temp_file=$(mktemp)
+
+        # Process line by line to avoid escaping issues
+        while IFS= read -r line; do
+            # Replace computer:///mnt/user-data/outputs/filename with file://relative/path/chatname_filename
+            line=$(echo "$line" | perl -pe 's|computer:///mnt/user-data/outputs/([^\)]*)|file://'"${rel_path}"'/'"${chat_name}"'_\1|g')
+            echo "$line" >> "$temp_file"
+        done < "$chat_file"
+
+        # Replace original with processed file
+        mv "$temp_file" "$chat_file"
 
         # Check if file actually changed
         if ! cmp -s "$chat_file" "$chat_file.bak"; then
-            files_modified=$((files_modified + 1))
-            links_replaced=$((links_replaced + matches))
             echo -e "${GREEN}✓ Updated: $(basename "$chat_file") ($matches links)${NC}"
             rm "$chat_file.bak"
         else
@@ -72,15 +78,4 @@ find "$CHATS_DIR" -name "*.md" -type f | while read -r chat_file; do
 done
 
 echo ""
-echo "================================"
-echo -e "${GREEN}Summary:${NC}"
-echo "  Total chat files processed: $total_files"
-echo "  Files modified: $files_modified"
-echo "  Artifact links replaced: $links_replaced"
-echo ""
-
-if [ $files_modified -gt 0 ]; then
-    echo -e "${GREEN}✓ Relinking complete!${NC}"
-else
-    echo -e "${YELLOW}No artifact links found to relink.${NC}"
-fi
+echo -e "${GREEN}✓ Relinking complete!${NC}"
