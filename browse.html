@@ -582,11 +582,6 @@
             <div class="section-divider"></div>
 
             <div class="export-section artifact-section">
-              <label title="Include artifacts (code, documents, etc.) directly within the conversation text">
-                <input type="checkbox" id="includeArtifacts">
-                Artifacts inline
-              </label>
-
               <label>
                 Artifact format:
                 <select id="artifactFormat">
@@ -595,6 +590,11 @@
                   <option value="text">Plain Text</option>
                   <option value="json">JSON</option>
                 </select>
+              </label>
+
+              <label title="Include artifacts (code, documents, etc.) directly within the conversation text">
+                <input type="checkbox" id="includeArtifacts">
+                Artifacts inline
               </label>
 
               <label title="Extract artifacts as separate files in nested folders">
