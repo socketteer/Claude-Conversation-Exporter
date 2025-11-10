@@ -213,12 +213,14 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         } else if (request.extractArtifacts) {
           // When extracting artifacts, always create a ZIP
           const zip = new JSZip();
-          let count = 0;
+          let processed = 0;
+          let included = 0;
           let errors = [];
 
           for (const conv of conversations) {
             try {
-              console.log(`Fetching full conversation ${count + 1}/${conversations.length}: ${conv.uuid}`);
+              processed++;
+              console.log(`Scanning conversation ${processed}/${conversations.length}: ${conv.name || conv.uuid}`);
               const fullConv = await fetchConversation(request.orgId, conv.uuid);
 
               // Infer model if null
@@ -229,7 +231,9 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 
               // If chats are disabled and no artifacts, skip this conversation
               if (request.includeChats === false && artifactFiles.length === 0) {
-                console.log(`Skipping ${conv.name} - no artifacts found (chats disabled)`);
+                console.log(`  Skipping - no artifacts found (${processed}/${conversations.length} scanned, ${included} included)`);
+                // Add a small delay to avoid overwhelming the API
+                await new Promise(resolve => setTimeout(resolve, 500));
                 continue;
               }
 
@@ -262,7 +266,8 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                 }
               }
 
-              count++;
+              included++;
+              console.log(`  Added to export (${processed}/${conversations.length} scanned, ${included} included)`);
 
               // Add a small delay to avoid overwhelming the API
               await new Promise(resolve => setTimeout(resolve, 500));
@@ -288,11 +293,11 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
             console.warn('Some conversations failed to export:', errors);
             sendResponse({
               success: true,
-              count,
-              warnings: `Exported ${count}/${conversations.length} conversations. Some failed: ${errors.join('; ')}`
+              count: included,
+              warnings: `Exported ${included}/${conversations.length} conversations. Some failed: ${errors.join('; ')}`
             });
           } else {
-            sendResponse({ success: true, count });
+            sendResponse({ success: true, count: included });
           }
         } else {
           // For other formats without artifact extraction, create individual files
