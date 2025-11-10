@@ -58,6 +58,10 @@ function convertToMarkdown(data, includeMetadata, conversationId = null) {
     }
     markdown += `\n`;
 
+    // Extract artifacts from the entire message (handles both old and new formats)
+    const messageArtifacts = extractArtifactsFromMessage(message);
+
+    // Render message text (excluding tool_use and artifact tags)
     if (message.content) {
       for (const content of message.content) {
         // Handle thinking blocks (extended thinking)
@@ -69,59 +73,32 @@ function convertToMarkdown(data, includeMetadata, conversationId = null) {
 
           markdown += `#### Thinking\n\`\`\`\`plaintext\n${summary}\n\n${content.thinking}\n\`\`\`\`\n\n`;
         }
-        // Handle regular text content
-        else if (content.text) {
-          // Check for artifacts in text content
-          const artifacts = extractArtifacts(content.text);
-
-          if (artifacts.length > 0) {
-            // If there are artifacts, render text without artifact tags and then artifacts separately
-            let textWithoutArtifacts = content.text.replace(/<antArtifact[^>]*>[\s\S]*?<\/antArtifact>/g, '').trim();
-
-            if (textWithoutArtifacts) {
-              markdown += `${textWithoutArtifacts}\n\n`;
-            }
-
-            // Render each artifact
-            for (const artifact of artifacts) {
-              markdown += `#### 📦 Artifact: ${artifact.title}\n`;
-              markdown += `**Type:** ${artifact.type} | **Language:** ${artifact.language}\n\n`;
-
-              if (artifact.type === 'code' || isProgrammingLanguage(artifact.language)) {
-                markdown += `\`\`\`${artifact.language}\n${artifact.content}\n\`\`\`\n\n`;
-              } else {
-                markdown += `${artifact.content}\n\n`;
-              }
-            }
-          } else {
-            // No artifacts, just render text normally
-            markdown += `${content.text}\n\n`;
+        // Handle regular text content (skip tool_use, we handle artifacts separately)
+        else if (content.type === 'text' && content.text) {
+          // Remove old-format artifact tags from text
+          let textWithoutArtifacts = content.text.replace(/<antArtifact[^>]*>[\s\S]*?<\/antArtifact>/g, '').trim();
+          if (textWithoutArtifacts) {
+            markdown += `${textWithoutArtifacts}\n\n`;
           }
         }
       }
     } else if (message.text) {
-      // Handle old format - check for artifacts
-      const artifacts = extractArtifacts(message.text);
+      // Handle old format - remove artifact tags from text
+      let textWithoutArtifacts = message.text.replace(/<antArtifact[^>]*>[\s\S]*?<\/antArtifact>/g, '').trim();
+      if (textWithoutArtifacts) {
+        markdown += `${textWithoutArtifacts}\n\n`;
+      }
+    }
 
-      if (artifacts.length > 0) {
-        let textWithoutArtifacts = message.text.replace(/<antArtifact[^>]*>[\s\S]*?<\/antArtifact>/g, '').trim();
+    // Render all artifacts found in the message
+    for (const artifact of messageArtifacts) {
+      markdown += `#### 📦 Artifact: ${artifact.title}\n`;
+      markdown += `**Type:** ${artifact.type} | **Language:** ${artifact.language}\n\n`;
 
-        if (textWithoutArtifacts) {
-          markdown += `${textWithoutArtifacts}\n\n`;
-        }
-
-        for (const artifact of artifacts) {
-          markdown += `#### 📦 Artifact: ${artifact.title}\n`;
-          markdown += `**Type:** ${artifact.type} | **Language:** ${artifact.language}\n\n`;
-
-          if (artifact.type === 'code' || isProgrammingLanguage(artifact.language)) {
-            markdown += `\`\`\`${artifact.language}\n${artifact.content}\n\`\`\`\n\n`;
-          } else {
-            markdown += `${artifact.content}\n\n`;
-          }
-        }
+      if (artifact.type === 'code' || isProgrammingLanguage(artifact.language)) {
+        markdown += `\`\`\`${artifact.language}\n${artifact.content}\n\`\`\`\n\n`;
       } else {
-        markdown += `${message.text}\n\n`;
+        markdown += `${artifact.content}\n\n`;
       }
     }
   }
@@ -150,36 +127,25 @@ function convertToText(data, includeMetadata) {
   let assistantSeen = false;
   
   branchMessages.forEach((message) => {
-    // Get the message text
-    let messageText = '';
-    let hasArtifacts = false;
-    let artifacts = [];
+    // Extract artifacts from the entire message (handles both old and new formats)
+    const artifacts = extractArtifactsFromMessage(message);
 
+    // Get the message text (excluding artifacts)
+    let messageText = '';
     if (message.content) {
       for (const content of message.content) {
-        if (content.text) {
-          // Check for artifacts
-          const contentArtifacts = extractArtifacts(content.text);
-          if (contentArtifacts.length > 0) {
-            hasArtifacts = true;
-            artifacts = artifacts.concat(contentArtifacts);
-            // Remove artifact tags from text
-            messageText += content.text.replace(/<antArtifact[^>]*>[\s\S]*?<\/antArtifact>/g, '').trim();
-          } else {
-            messageText += content.text;
-          }
+        // Only include text content, skip tool_use
+        if (content.type === 'text' && content.text) {
+          // Remove old-format artifact tags
+          messageText += content.text.replace(/<antArtifact[^>]*>[\s\S]*?<\/antArtifact>/g, '').trim() + ' ';
         }
       }
     } else if (message.text) {
-      const contentArtifacts = extractArtifacts(message.text);
-      if (contentArtifacts.length > 0) {
-        hasArtifacts = true;
-        artifacts = contentArtifacts;
-        messageText = message.text.replace(/<antArtifact[^>]*>[\s\S]*?<\/antArtifact>/g, '').trim();
-      } else {
-        messageText = message.text;
-      }
+      // Handle old format - remove artifact tags
+      messageText = message.text.replace(/<antArtifact[^>]*>[\s\S]*?<\/antArtifact>/g, '').trim();
     }
+
+    messageText = messageText.trim();
 
     // Use full label on first occurrence, then abbreviate
     let senderLabel;
@@ -194,7 +160,7 @@ function convertToText(data, includeMetadata) {
     text += `${senderLabel}: ${messageText}\n`;
 
     // Add artifacts if present
-    if (hasArtifacts) {
+    if (artifacts.length > 0) {
       for (const artifact of artifacts) {
         text += `\n[Artifact: ${artifact.title} (${artifact.language})]\n`;
         text += `${artifact.content}\n`;
@@ -225,8 +191,63 @@ function downloadFile(content, filename, type = 'application/json') {
 // Artifact Extraction Functions
 // ============================================================================
 
-// Extract artifacts from message text using regex
-function extractArtifacts(text) {
+// Extract artifacts from message content (supports both old and new formats)
+function extractArtifactsFromMessage(message) {
+  const artifacts = [];
+
+  // Check if message has content array (new format)
+  if (message.content && Array.isArray(message.content)) {
+    for (const content of message.content) {
+      // NEW FORMAT: tool_use with display_content
+      if (content.type === 'tool_use' && content.display_content) {
+        const displayContent = content.display_content;
+
+        // Check for json_block format
+        if (displayContent.type === 'json_block' && displayContent.json_block) {
+          try {
+            const artifactData = JSON.parse(displayContent.json_block);
+
+            // Extract artifact details
+            const language = artifactData.language || 'txt';
+            const code = artifactData.code || '';
+            const filename = artifactData.filename || 'Untitled';
+
+            // Extract title from filename (remove path and extension)
+            const title = filename.split('/').pop().replace(/\.[^.]+$/, '');
+
+            artifacts.push({
+              title: title || 'Untitled',
+              language: language,
+              type: isProgrammingLanguage(language) ? 'code' : 'document',
+              identifier: null,
+              content: code.trim(),
+            });
+          } catch (e) {
+            // JSON parse failed, skip this artifact
+            console.warn('Failed to parse artifact json_block:', e);
+          }
+        }
+      }
+
+      // OLD FORMAT: Check text content for <antArtifact> tags
+      if (content.text) {
+        const textArtifacts = extractArtifactsFromText(content.text);
+        artifacts.push(...textArtifacts);
+      }
+    }
+  }
+
+  // Fallback: Check message.text directly (older format)
+  if (message.text) {
+    const textArtifacts = extractArtifactsFromText(message.text);
+    artifacts.push(...textArtifacts);
+  }
+
+  return artifacts;
+}
+
+// Extract artifacts from text using regex (OLD FORMAT: <antArtifact> tags)
+function extractArtifactsFromText(text) {
   const artifactRegex = /<antArtifact[^>]*>([\s\S]*?)<\/antArtifact>/g;
   const artifacts = [];
   let match;
@@ -286,6 +307,11 @@ function extractArtifacts(text) {
   }
 
   return artifacts;
+}
+
+// Legacy function name for backward compatibility
+function extractArtifacts(text) {
+  return extractArtifactsFromText(text);
 }
 
 // Get file extension from language
