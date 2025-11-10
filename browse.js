@@ -663,10 +663,19 @@ async function exportAllFiltered() {
           }
           
           const data = await response.json();
-          
+
           // Infer model if null
           data.model = inferModel(data);
-          
+
+          // Extract artifacts first to check if this conversation should be included
+          const artifactFiles = extractArtifactFiles(data);
+
+          // If chats are disabled and no artifacts, skip this conversation
+          if (includeChats === false && artifactFiles.length === 0) {
+            console.log(`Skipping ${conv.name} - no artifacts found (chats disabled)`);
+            return; // Skip this conversation in the promise
+          }
+
           // Generate filename and content based on format
           let content, filename;
           const safeName = conv.name.replace(/[<>:"/\\|?*]/g, '_'); // Remove invalid filename characters
@@ -694,8 +703,7 @@ async function exportAllFiltered() {
               convFolder.file(filename, content);
             }
 
-            // Extract and add artifact files
-            const artifactFiles = extractArtifactFiles(data);
+            // Add artifact files
             if (artifactFiles.length > 0) {
               const artifactsFolder = includeChats !== false ? convFolder.folder('artifacts') : convFolder;
               for (const artifact of artifactFiles) {

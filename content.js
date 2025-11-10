@@ -224,29 +224,39 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
               // Infer model if null
               fullConv.model = inferModel(fullConv);
 
+              // Extract artifacts first to check if this conversation should be included
+              const artifactFiles = extractArtifactFiles(fullConv);
+
+              // If chats are disabled and no artifacts, skip this conversation
+              if (request.includeChats === false && artifactFiles.length === 0) {
+                console.log(`Skipping ${conv.name} - no artifacts found (chats disabled)`);
+                continue;
+              }
+
               // Sanitize folder name
               const folderName = (conv.name || conv.uuid).replace(/[<>:"/\\|?*]/g, '_');
               const convFolder = zip.folder(folderName);
 
-              // Add conversation file
-              let conversationContent, conversationFilename;
-              if (request.format === 'markdown') {
-                conversationContent = convertToMarkdown(fullConv, request.includeMetadata, conv.uuid, request.includeArtifacts);
-                conversationFilename = `${folderName}.md`;
-              } else if (request.format === 'text') {
-                conversationContent = convertToText(fullConv, request.includeMetadata, request.includeArtifacts);
-                conversationFilename = `${folderName}.txt`;
-              } else {
-                conversationContent = JSON.stringify(fullConv, null, 2);
-                conversationFilename = `${folderName}.json`;
+              // Add conversation file only if includeChats is true
+              if (request.includeChats !== false) {
+                let conversationContent, conversationFilename;
+                if (request.format === 'markdown') {
+                  conversationContent = convertToMarkdown(fullConv, request.includeMetadata, conv.uuid, request.includeArtifacts);
+                  conversationFilename = `${folderName}.md`;
+                } else if (request.format === 'text') {
+                  conversationContent = convertToText(fullConv, request.includeMetadata, request.includeArtifacts);
+                  conversationFilename = `${folderName}.txt`;
+                } else {
+                  conversationContent = JSON.stringify(fullConv, null, 2);
+                  conversationFilename = `${folderName}.json`;
+                }
+
+                convFolder.file(conversationFilename, conversationContent);
               }
 
-              convFolder.file(conversationFilename, conversationContent);
-
-              // Extract and add artifact files
-              const artifactFiles = extractArtifactFiles(fullConv);
+              // Add artifact files
               if (artifactFiles.length > 0) {
-                const artifactsFolder = convFolder.folder('artifacts');
+                const artifactsFolder = request.includeChats !== false ? convFolder.folder('artifacts') : convFolder;
                 for (const artifact of artifactFiles) {
                   artifactsFolder.file(artifact.filename, artifact.content);
                 }
