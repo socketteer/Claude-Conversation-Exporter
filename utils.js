@@ -31,7 +31,7 @@ function getCurrentBranch(data) {
 }
 
 // Convert to markdown format
-function convertToMarkdown(data, includeMetadata, conversationId = null) {
+function convertToMarkdown(data, includeMetadata, conversationId = null, includeArtifacts = true) {
   console.log('🔧 UTILS.JS MODIFIED VERSION - conversationId:', conversationId);
   let markdown = `# ${data.name || 'Untitled Conversation'}\n\n`;
 
@@ -59,7 +59,7 @@ function convertToMarkdown(data, includeMetadata, conversationId = null) {
     markdown += `\n`;
 
     // Extract artifacts from the entire message (handles both old and new formats)
-    const messageArtifacts = extractArtifactsFromMessage(message);
+    const messageArtifacts = includeArtifacts ? extractArtifactsFromMessage(message) : [];
 
     // Render message text (excluding tool_use and artifact tags)
     if (message.content) {
@@ -107,9 +107,9 @@ function convertToMarkdown(data, includeMetadata, conversationId = null) {
 }
 
 // Convert to plain text
-function convertToText(data, includeMetadata) {
+function convertToText(data, includeMetadata, includeArtifacts = true) {
   let text = '';
-  
+
   // Add metadata header if requested
   if (includeMetadata) {
     text += `${data.name || 'Untitled Conversation'}\n`;
@@ -118,17 +118,17 @@ function convertToText(data, includeMetadata) {
     text += `Model: ${data.model}\n\n`;
     text += '---\n\n';
   }
-  
+
   // Get only the current branch messages
   const branchMessages = getCurrentBranch(data);
-  
+
   // Use simplified format
   let humanSeen = false;
   let assistantSeen = false;
-  
+
   branchMessages.forEach((message) => {
     // Extract artifacts from the entire message (handles both old and new formats)
-    const artifacts = extractArtifactsFromMessage(message);
+    const artifacts = includeArtifacts ? extractArtifactsFromMessage(message) : [];
 
     // Get the message text (excluding artifacts)
     let messageText = '';

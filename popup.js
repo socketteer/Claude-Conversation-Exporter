@@ -74,7 +74,8 @@ document.getElementById('exportCurrent').addEventListener('click', async () => {
       conversationId,
       orgId,
       format: document.getElementById('format').value,
-      includeMetadata: document.getElementById('includeMetadata').checked
+      includeMetadata: document.getElementById('includeMetadata').checked,
+      includeArtifacts: document.getElementById('includeArtifacts').checked
     }, (response) => {
       if (chrome.runtime.lastError) {
         console.error('Chrome runtime error:', chrome.runtime.lastError);
@@ -122,7 +123,8 @@ document.getElementById('exportCurrent').addEventListener('click', async () => {
       action: 'exportAllConversations',
       orgId,
       format: document.getElementById('format').value,
-      includeMetadata: document.getElementById('includeMetadata').checked
+      includeMetadata: document.getElementById('includeMetadata').checked,
+      includeArtifacts: document.getElementById('includeArtifacts').checked
     }, (response) => {
       if (chrome.runtime.lastError) {
         console.error('Chrome runtime error:', chrome.runtime.lastError);
