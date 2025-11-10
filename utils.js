@@ -210,21 +210,24 @@ function extractArtifactsFromMessage(message) {
           try {
             const artifactData = JSON.parse(displayContent.json_block);
 
-            // Extract artifact details
-            const language = artifactData.language || 'txt';
-            const code = artifactData.code || '';
-            const filename = artifactData.filename || 'Untitled';
+            // Only treat as artifact if it has a filename (real artifacts, not tool uses like bash)
+            if (artifactData.filename) {
+              // Extract artifact details
+              const language = artifactData.language || 'txt';
+              const code = artifactData.code || '';
+              const filename = artifactData.filename;
 
-            // Extract title from filename (remove path and extension)
-            const title = filename.split('/').pop().replace(/\.[^.]+$/, '');
+              // Extract title from filename (remove path and extension)
+              const title = filename.split('/').pop().replace(/\.[^.]+$/, '');
 
-            artifacts.push({
-              title: title || 'Untitled',
-              language: language,
-              type: isProgrammingLanguage(language) ? 'code' : 'document',
-              identifier: null,
-              content: code.trim(),
-            });
+              artifacts.push({
+                title: title || 'Untitled',
+                language: language,
+                type: isProgrammingLanguage(language) ? 'code' : 'document',
+                identifier: null,
+                content: code.trim(),
+              });
+            }
           } catch (e) {
             // JSON parse failed, skip this artifact
             console.warn('Failed to parse artifact json_block:', e);
