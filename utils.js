@@ -420,7 +420,7 @@ function extractArtifactFiles(data) {
       baseFilename = baseFilename.replace(/[<>:"/\\|?*]/g, '_');
 
       // Get extension from language
-      const extension = getLanguageExtension(artifact.language);
+      const extension = getFileExtension(artifact.language);
       let filename = `${baseFilename}${extension}`;
 
       // Handle duplicate filenames
