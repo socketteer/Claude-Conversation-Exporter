@@ -2,11 +2,14 @@
 
 # Relink Claude artifacts in exported chat markdown files (Obsidian wikilink format)
 # This script updates artifact links in chat markdown files to use Obsidian wikilinks
+# Assumes script is located at: Claude Squad/_Code/CLI/
 
-# Default paths (can be overridden with command line arguments)
-VAULT_BASE="${1:-Claude Squad}"
-CHATS_DIR="${VAULT_BASE}/_Archive/Export/Chats/md"
-ARTIFACTS_DIR="${VAULT_BASE}/_Archive/Export/Artifacts"
+# Get the directory where this script is located
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+# Default paths relative to script location (assumes script is in Claude Squad/_Code/CLI/)
+CHATS_DIR="${SCRIPT_DIR}/../../_Archive/Export/Chats/md"
+ARTIFACTS_DIR="${SCRIPT_DIR}/../../_Archive/Export/Artifacts"
 
 # Colors for output
 GREEN='\033[0;32m'
@@ -23,8 +26,7 @@ echo ""
 # Check if directories exist
 if [ ! -d "$CHATS_DIR" ]; then
     echo -e "${RED}Error: Chats directory not found: $CHATS_DIR${NC}"
-    echo "Usage: $0 [vault_base_path]"
-    echo "Example: $0 'Claude Squad'"
+    echo "Make sure this script is located at: Claude Squad/_Code/CLI/"
     exit 1
 fi
 
