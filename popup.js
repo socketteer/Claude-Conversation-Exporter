@@ -15,6 +15,28 @@ document.addEventListener('DOMContentLoaded', async () => {
     document.getElementById('exportCurrent').disabled = true;
     document.getElementById('exportAll').disabled = true;
   }
+
+  // Handle checkbox dependencies
+  const includeChatsCheckbox = document.getElementById('includeChats');
+  const includeMetadataCheckbox = document.getElementById('includeMetadata');
+  const includeArtifactsCheckbox = document.getElementById('includeArtifacts');
+
+  function updateCheckboxStates() {
+    const chatsEnabled = includeChatsCheckbox.checked;
+
+    // Disable metadata and inline artifacts when chats is unchecked
+    includeMetadataCheckbox.disabled = !chatsEnabled;
+    includeArtifactsCheckbox.disabled = !chatsEnabled;
+
+    // Optionally uncheck them when disabled
+    if (!chatsEnabled) {
+      includeMetadataCheckbox.checked = false;
+      includeArtifactsCheckbox.checked = false;
+    }
+  }
+
+  includeChatsCheckbox.addEventListener('change', updateCheckboxStates);
+  updateCheckboxStates(); // Initialize on load
 });
 
 // Handle options link click
@@ -74,6 +96,7 @@ document.getElementById('exportCurrent').addEventListener('click', async () => {
       conversationId,
       orgId,
       format: document.getElementById('format').value,
+      includeChats: document.getElementById('includeChats').checked,
       includeMetadata: document.getElementById('includeMetadata').checked,
       includeArtifacts: document.getElementById('includeArtifacts').checked,
       extractArtifacts: document.getElementById('extractArtifacts').checked
@@ -124,6 +147,7 @@ document.getElementById('exportCurrent').addEventListener('click', async () => {
       action: 'exportAllConversations',
       orgId,
       format: document.getElementById('format').value,
+      includeChats: document.getElementById('includeChats').checked,
       includeMetadata: document.getElementById('includeMetadata').checked,
       includeArtifacts: document.getElementById('includeArtifacts').checked,
       extractArtifacts: document.getElementById('extractArtifacts').checked

@@ -464,6 +464,7 @@ function updateStats() {
 // Export single conversation
 async function exportConversation(conversationId, conversationName) {
   const format = document.getElementById('exportFormat').value;
+  const includeChats = document.getElementById('includeChats').checked;
   const includeMetadata = document.getElementById('includeMetadata').checked;
   const includeArtifacts = document.getElementById('includeArtifacts').checked;
   const extractArtifacts = document.getElementById('extractArtifacts').checked;
@@ -495,29 +496,31 @@ async function exportConversation(conversationId, conversationName) {
       const artifactFiles = extractArtifactFiles(data);
 
       if (artifactFiles.length > 0) {
-        // Create a ZIP with the conversation and artifacts
+        // Create a ZIP with artifacts (and optionally conversation)
         const zip = new JSZip();
 
-        // Add conversation file
-        let conversationContent, conversationFilename;
-        switch (format) {
-          case 'markdown':
-            conversationContent = convertToMarkdown(data, includeMetadata, conversationId, includeArtifacts);
-            conversationFilename = `${conversationName || conversationId}.md`;
-            break;
-          case 'text':
-            conversationContent = convertToText(data, includeMetadata, includeArtifacts);
-            conversationFilename = `${conversationName || conversationId}.txt`;
-            break;
-          default:
-            conversationContent = JSON.stringify(data, null, 2);
-            conversationFilename = `${conversationName || conversationId}.json`;
+        // Add conversation file only if includeChats is true
+        if (includeChats !== false) {
+          let conversationContent, conversationFilename;
+          switch (format) {
+            case 'markdown':
+              conversationContent = convertToMarkdown(data, includeMetadata, conversationId, includeArtifacts);
+              conversationFilename = `${conversationName || conversationId}.md`;
+              break;
+            case 'text':
+              conversationContent = convertToText(data, includeMetadata, includeArtifacts);
+              conversationFilename = `${conversationName || conversationId}.txt`;
+              break;
+            default:
+              conversationContent = JSON.stringify(data, null, 2);
+              conversationFilename = `${conversationName || conversationId}.json`;
+          }
+
+          zip.file(conversationFilename, conversationContent);
         }
 
-        zip.file(conversationFilename, conversationContent);
-
-        // Add artifact files to an artifacts subfolder
-        const artifactsFolder = zip.folder('artifacts');
+        // Add artifact files to root or artifacts subfolder
+        const artifactsFolder = includeChats !== false ? zip.folder('artifacts') : zip;
         for (const artifact of artifactFiles) {
           artifactsFolder.file(artifact.filename, artifact.content);
         }
@@ -558,25 +561,30 @@ async function exportConversation(conversationId, conversationName) {
       }
     } else {
       // Normal export without artifact extraction
-      let content, filename, type;
-      switch (format) {
-        case 'markdown':
-          content = convertToMarkdown(data, includeMetadata, conversationId, includeArtifacts);
-          filename = `${conversationName || conversationId}.md`;
-          type = 'text/markdown';
-          break;
-        case 'text':
-          content = convertToText(data, includeMetadata, includeArtifacts);
-          filename = `${conversationName || conversationId}.txt`;
-          type = 'text/plain';
-          break;
-        default:
-          content = JSON.stringify(data, null, 2);
-          filename = `${conversationName || conversationId}.json`;
-          type = 'application/json';
+      if (includeChats === false) {
+        // If chats are disabled and we're not extracting artifacts, there's nothing to export
+        showToast('Nothing to export. Enable "Chats" or "Artifacts separate".', true);
+      } else {
+        let content, filename, type;
+        switch (format) {
+          case 'markdown':
+            content = convertToMarkdown(data, includeMetadata, conversationId, includeArtifacts);
+            filename = `${conversationName || conversationId}.md`;
+            type = 'text/markdown';
+            break;
+          case 'text':
+            content = convertToText(data, includeMetadata, includeArtifacts);
+            filename = `${conversationName || conversationId}.txt`;
+            type = 'text/plain';
+            break;
+          default:
+            content = JSON.stringify(data, null, 2);
+            filename = `${conversationName || conversationId}.json`;
+            type = 'application/json';
+        }
+        downloadFile(content, filename, type);
+        showToast(`Exported: ${conversationName}`);
       }
-      downloadFile(content, filename, type);
-      showToast(`Exported: ${conversationName}`);
     }
     
   } catch (error) {
@@ -588,6 +596,7 @@ async function exportConversation(conversationId, conversationName) {
 // Export all filtered conversations
 async function exportAllFiltered() {
   const format = document.getElementById('exportFormat').value;
+  const includeChats = document.getElementById('includeChats').checked;
   const includeMetadata = document.getElementById('includeMetadata').checked;
   const includeArtifacts = document.getElementById('includeArtifacts').checked;
   const extractArtifacts = document.getElementById('extractArtifacts').checked;
@@ -679,19 +688,25 @@ async function exportAllFiltered() {
           // If extracting artifacts, create folder structure
           if (extractArtifacts) {
             const convFolder = zip.folder(safeName);
-            convFolder.file(filename, content);
+
+            // Add conversation file only if includeChats is true
+            if (includeChats !== false) {
+              convFolder.file(filename, content);
+            }
 
             // Extract and add artifact files
             const artifactFiles = extractArtifactFiles(data);
             if (artifactFiles.length > 0) {
-              const artifactsFolder = convFolder.folder('artifacts');
+              const artifactsFolder = includeChats !== false ? convFolder.folder('artifacts') : convFolder;
               for (const artifact of artifactFiles) {
                 artifactsFolder.file(artifact.filename, artifact.content);
               }
             }
           } else {
-            // Add file to ZIP root
-            zip.file(filename, content);
+            // Add file to ZIP root only if chats are enabled
+            if (includeChats !== false) {
+              zip.file(filename, content);
+            }
           }
 
           completed++;
@@ -788,6 +803,28 @@ function showToast(message, isError = false) {
 
 // Setup event listeners
 function setupEventListeners() {
+  // Handle checkbox dependencies
+  const includeChatsCheckbox = document.getElementById('includeChats');
+  const includeMetadataCheckbox = document.getElementById('includeMetadata');
+  const includeArtifactsCheckbox = document.getElementById('includeArtifacts');
+
+  function updateCheckboxStates() {
+    const chatsEnabled = includeChatsCheckbox.checked;
+
+    // Disable metadata and inline artifacts when chats is unchecked
+    includeMetadataCheckbox.disabled = !chatsEnabled;
+    includeArtifactsCheckbox.disabled = !chatsEnabled;
+
+    // Optionally uncheck them when disabled
+    if (!chatsEnabled) {
+      includeMetadataCheckbox.checked = false;
+      includeArtifactsCheckbox.checked = false;
+    }
+  }
+
+  includeChatsCheckbox.addEventListener('change', updateCheckboxStates);
+  updateCheckboxStates(); // Initialize on load
+
   // Theme toggle
   document.getElementById('themeToggle').addEventListener('click', toggleTheme);
 

@@ -85,29 +85,31 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
           const artifactFiles = extractArtifactFiles(data);
 
           if (artifactFiles.length > 0) {
-            // Create a ZIP with the conversation and artifacts
+            // Create a ZIP with artifacts (and optionally conversation)
             const zip = new JSZip();
 
-            // Add conversation file
-            let conversationContent, conversationFilename;
-            switch (request.format) {
-              case 'markdown':
-                conversationContent = convertToMarkdown(data, request.includeMetadata, request.conversationId, request.includeArtifacts);
-                conversationFilename = `${data.name || request.conversationId}.md`;
-                break;
-              case 'text':
-                conversationContent = convertToText(data, request.includeMetadata, request.includeArtifacts);
-                conversationFilename = `${data.name || request.conversationId}.txt`;
-                break;
-              default:
-                conversationContent = JSON.stringify(data, null, 2);
-                conversationFilename = `${data.name || request.conversationId}.json`;
+            // Add conversation file only if includeChats is true
+            if (request.includeChats !== false) {
+              let conversationContent, conversationFilename;
+              switch (request.format) {
+                case 'markdown':
+                  conversationContent = convertToMarkdown(data, request.includeMetadata, request.conversationId, request.includeArtifacts);
+                  conversationFilename = `${data.name || request.conversationId}.md`;
+                  break;
+                case 'text':
+                  conversationContent = convertToText(data, request.includeMetadata, request.includeArtifacts);
+                  conversationFilename = `${data.name || request.conversationId}.txt`;
+                  break;
+                default:
+                  conversationContent = JSON.stringify(data, null, 2);
+                  conversationFilename = `${data.name || request.conversationId}.json`;
+              }
+
+              zip.file(conversationFilename, conversationContent);
             }
 
-            zip.file(conversationFilename, conversationContent);
-
-            // Add artifact files to an artifacts subfolder
-            const artifactsFolder = zip.folder('artifacts');
+            // Add artifact files to root or artifacts subfolder
+            const artifactsFolder = request.includeChats !== false ? zip.folder('artifacts') : zip;
             for (const artifact of artifactFiles) {
               artifactsFolder.file(artifact.filename, artifact.content);
             }
@@ -151,27 +153,36 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
           }
         } else {
           // Normal export without artifact extraction
-          let content, filename, type;
-          switch (request.format) {
-            case 'markdown':
-              content = convertToMarkdown(data, request.includeMetadata, request.conversationId, request.includeArtifacts);
-              filename = `${data.name || request.conversationId}.md`;
-              type = 'text/markdown';
-              break;
-            case 'text':
-              content = convertToText(data, request.includeMetadata, request.includeArtifacts);
-              filename = `${data.name || request.conversationId}.txt`;
-              type = 'text/plain';
-              break;
-            default:
-              content = JSON.stringify(data, null, 2);
-              filename = `${data.name || request.conversationId}.json`;
-              type = 'application/json';
-          }
+          if (request.includeChats === false) {
+            // If chats are disabled and we're not extracting artifacts, there's nothing to export
+            console.log('No content to export (chats disabled, artifacts not extracted)');
+            sendResponse({
+              success: false,
+              error: 'Nothing to export. Enable "Include conversation text" or "Extract artifacts to separate files".'
+            });
+          } else {
+            let content, filename, type;
+            switch (request.format) {
+              case 'markdown':
+                content = convertToMarkdown(data, request.includeMetadata, request.conversationId, request.includeArtifacts);
+                filename = `${data.name || request.conversationId}.md`;
+                type = 'text/markdown';
+                break;
+              case 'text':
+                content = convertToText(data, request.includeMetadata, request.includeArtifacts);
+                filename = `${data.name || request.conversationId}.txt`;
+                type = 'text/plain';
+                break;
+              default:
+                content = JSON.stringify(data, null, 2);
+                filename = `${data.name || request.conversationId}.json`;
+                type = 'application/json';
+            }
 
-          console.log('Downloading file:', filename);
-          downloadFile(content, filename, type);
-          sendResponse({ success: true });
+            console.log('Downloading file:', filename);
+            downloadFile(content, filename, type);
+            sendResponse({ success: true });
+          }
         }
       })
       .catch(error => {
