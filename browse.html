@@ -527,26 +527,28 @@
 <body>
   <div class="header">
     <div class="header-top">
-      <button class="theme-toggle" id="themeToggle" aria-label="Toggle theme">
-        <svg class="sun-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <circle cx="12" cy="12" r="5" stroke-width="2"/>
-          <line x1="12" y1="1" x2="12" y2="3" stroke-width="2"/>
-          <line x1="12" y1="21" x2="12" y2="23" stroke-width="2"/>
-          <line x1="4.22" y1="4.22" x2="5.64" y2="5.64" stroke-width="2"/>
-          <line x1="18.36" y1="18.36" x2="19.78" y2="19.78" stroke-width="2"/>
-          <line x1="1" y1="12" x2="3" y2="12" stroke-width="2"/>
-          <line x1="21" y1="12" x2="23" y2="12" stroke-width="2"/>
-          <line x1="4.22" y1="19.78" x2="5.64" y2="18.36" stroke-width="2"/>
-          <line x1="18.36" y1="5.64" x2="19.78" y2="4.22" stroke-width="2"/>
-        </svg>
-        <svg class="moon-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="display: none;">
-          <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" stroke-width="2"/>
-        </svg>
-      </button>
-      <h1>Browse Claude Conversations</h1>
-      <div class="search-box" id="searchBox">
-        <input type="text" id="searchInput" placeholder="Search conversations by name...">
-        <button class="clear-btn" id="clearSearch">✕</button>
+      <div class="header-left">
+        <button class="theme-toggle" id="themeToggle" aria-label="Toggle theme">
+          <svg class="sun-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <circle cx="12" cy="12" r="5" stroke-width="2"/>
+            <line x1="12" y1="1" x2="12" y2="3" stroke-width="2"/>
+            <line x1="12" y1="21" x2="12" y2="23" stroke-width="2"/>
+            <line x1="4.22" y1="4.22" x2="5.64" y2="5.64" stroke-width="2"/>
+            <line x1="18.36" y1="18.36" x2="19.78" y2="19.78" stroke-width="2"/>
+            <line x1="1" y1="12" x2="3" y2="12" stroke-width="2"/>
+            <line x1="21" y1="12" x2="23" y2="12" stroke-width="2"/>
+            <line x1="4.22" y1="19.78" x2="5.64" y2="18.36" stroke-width="2"/>
+            <line x1="18.36" y1="5.64" x2="19.78" y2="4.22" stroke-width="2"/>
+          </svg>
+          <svg class="moon-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="display: none;">
+            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" stroke-width="2"/>
+          </svg>
+        </button>
+        <h1>Browse Claude Conversations</h1>
+        <div class="search-box" id="searchBox">
+          <input type="text" id="searchInput" placeholder="Search conversations by name...">
+          <button class="clear-btn" id="clearSearch">✕</button>
+        </div>
       </div>
     </div>
     <div class="controls">
@@ -573,58 +575,66 @@
       <div class="stats" id="stats">
         Loading...
       </div>
-      
-      <div class="export-settings">
-        <div class="export-row">
-          <label>
-            Chat format:
-            <select id="exportFormat">
-              <option value="json">JSON</option>
-              <option value="markdown">Markdown</option>
-              <option value="text">Plain Text</option>
-            </select>
-          </label>
 
-          <label title="Include the conversation messages in the exported file">
-            <input type="checkbox" id="includeChats" checked>
-            Chats
-          </label>
+      <div class="export-controls-wrapper">
+        <div class="export-settings">
+          <div class="export-row">
+            <div class="export-section chat-section">
+              <label>
+                Chat format:
+                <select id="exportFormat">
+                  <option value="json">JSON</option>
+                  <option value="markdown">Markdown</option>
+                  <option value="text">Plain Text</option>
+                </select>
+              </label>
 
-          <label title="Add conversation metadata (name, date, model, etc.) at the top of exported files">
-            <input type="checkbox" id="includeMetadata" checked>
-            Metadata
-          </label>
+              <label title="Include the conversation messages in the exported file">
+                <input type="checkbox" id="includeChats" checked>
+                Chats
+              </label>
 
-          <label title="Include artifacts (code, documents, etc.) directly within the conversation text">
-            <input type="checkbox" id="includeArtifacts">
-            Artifacts inline
-          </label>
+              <label title="Add conversation metadata (name, date, model, etc.) at the top of exported files">
+                <input type="checkbox" id="includeMetadata" checked>
+                Metadata
+              </label>
 
-          <label>
-            Artifact format:
-            <select id="artifactFormat">
-              <option value="original">Original</option>
-              <option value="markdown">Markdown</option>
-              <option value="text">Plain Text</option>
-              <option value="json">JSON</option>
-            </select>
-          </label>
+              <label title="Include artifacts (code, documents, etc.) directly within the conversation text">
+                <input type="checkbox" id="includeArtifacts">
+                Artifacts inline
+              </label>
+            </div>
 
-          <label title="Extract artifacts as separate files in a folder">
-            <input type="checkbox" id="extractArtifacts">
-            Artifact files
-          </label>
+            <div class="section-divider"></div>
 
-          <label title="Flatten artifact structure (no subfolders, with conversation name prefix)">
-            <input type="checkbox" id="flattenArtifacts">
-            Artifacts flat
-          </label>
+            <div class="export-section artifact-section">
+              <label>
+                Artifact format:
+                <select id="artifactFormat">
+                  <option value="original">Original</option>
+                  <option value="markdown">Markdown</option>
+                  <option value="text">Plain Text</option>
+                  <option value="json">JSON</option>
+                </select>
+              </label>
+
+              <label title="Extract artifacts as separate files in a folder">
+                <input type="checkbox" id="extractArtifacts">
+                Artifact files
+              </label>
+
+              <label title="Flatten artifact structure (no subfolders, with conversation name prefix)">
+                <input type="checkbox" id="flattenArtifacts">
+                Artifacts flat
+              </label>
+            </div>
+          </div>
         </div>
+
+        <button class="export-all-btn" id="exportAllBtn" disabled>
+          Export All
+        </button>
       </div>
-      
-      <button class="export-all-btn" id="exportAllBtn" disabled>
-        Export All
-      </button>
     </div>
   </div>
   
@@ -641,6 +651,23 @@
   
   <!-- Export options moved to header for better visibility -->
   <style>
+    .header-left {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+    }
+    .header-left h1 {
+      margin: 0;
+    }
+    .header-left .search-box {
+      margin-left: 10px;
+    }
+    .export-controls-wrapper {
+      display: flex;
+      align-items: center;
+      gap: 15px;
+      margin-left: auto;
+    }
     .export-settings {
       display: inline-flex;
       gap: 15px;
@@ -651,8 +678,19 @@
     }
     .export-row {
       display: flex;
+      gap: 20px;
+      align-items: center;
+    }
+    .export-section {
+      display: flex;
       gap: 15px;
       align-items: center;
+    }
+    .section-divider {
+      width: 1px;
+      height: 25px;
+      background: var(--input-border);
+      align-self: center;
     }
     .export-settings label {
       display: flex;
@@ -660,6 +698,7 @@
       gap: 5px;
       font-size: 13px;
       color: var(--text-secondary);
+      white-space: nowrap;
     }
     .export-settings select {
       padding: 4px 8px;
