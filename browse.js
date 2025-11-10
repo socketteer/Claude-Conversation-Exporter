@@ -724,6 +724,7 @@ async function exportAllFiltered() {
           // If chats are disabled and no artifacts, skip this conversation
           if (includeChats === false && artifactFiles.length === 0) {
             console.log(`Skipping ${conv.name} - no artifacts found (chats disabled)`);
+            completed++; // Count as completed even though skipped
             return; // Skip this conversation in the promise
           }
 
@@ -826,7 +827,10 @@ async function exportAllFiltered() {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `claude-conversations-${new Date().toISOString().split('T')[0]}.zip`;
+    // Format: claude-conversations-2025-10-31_14-30-45.zip
+    const now = new Date();
+    const datetime = now.toISOString().replace(/[:.]/g, '-').slice(0, 19).replace('T', '_');
+    a.download = `claude-conversations-${datetime}.zip`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);

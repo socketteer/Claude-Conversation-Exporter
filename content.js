@@ -217,7 +217,10 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         
         if (request.format === 'json' && !request.extractArtifacts) {
           // For JSON without artifact extraction, export as a single file
-          const filename = `all-conversations-${new Date().toISOString().split('T')[0]}.json`;
+          // Format: all-conversations-2025-10-31_14-30-45.json
+          const now = new Date();
+          const datetime = now.toISOString().replace(/[:.]/g, '-').slice(0, 19).replace('T', '_');
+          const filename = `all-conversations-${datetime}.json`;
           console.log('Downloading all conversations as JSON:', filename);
           downloadFile(JSON.stringify(conversations, null, 2), filename);
           sendResponse({ success: true, count: conversations.length });
@@ -304,7 +307,10 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
-            a.download = `all-conversations-${new Date().toISOString().split('T')[0]}.zip`;
+            // Format: all-conversations-2025-10-31_14-30-45.zip
+            const now = new Date();
+            const datetime = now.toISOString().replace(/[:.]/g, '-').slice(0, 19).replace('T', '_');
+            a.download = `all-conversations-${datetime}.zip`;
             document.body.appendChild(a);
             a.click();
             document.body.removeChild(a);
