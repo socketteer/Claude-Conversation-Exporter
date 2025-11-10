@@ -151,8 +151,8 @@
     }
     
     .search-box {
-      flex: 1;
-      min-width: 300px;
+      flex-grow: 1;
+      max-width: 400px;
       position: relative;
     }
     
@@ -547,13 +547,6 @@
         <h1>Browse Claude Conversations</h1>
       </div>
 
-      <div class="header-center">
-        <div class="search-box" id="searchBox">
-          <input type="text" id="searchInput" placeholder="Search conversations by name...">
-          <button class="clear-btn" id="clearSearch">✕</button>
-        </div>
-      </div>
-
       <div class="header-right">
         <div class="stats" id="stats">
           Loading...
@@ -567,6 +560,11 @@
         <select id="projectFilter">
           <option value="">All Projects</option>
         </select>
+      </div>
+
+      <div class="search-box" id="searchBox">
+        <input type="text" id="searchInput" placeholder="Search conversations by name...">
+        <button class="clear-btn" id="clearSearch">✕</button>
       </div>
 
       <div class="export-controls-wrapper">
@@ -659,12 +657,6 @@
     }
     .header-left h1 {
       margin: 0;
-    }
-    .header-center {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      flex-grow: 1;
     }
     .header-right {
       display: flex;
