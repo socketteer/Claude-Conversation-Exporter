@@ -80,9 +80,9 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         data.model = inferModel(data);
         
         // Check if we need to extract artifacts to separate files
-        if (request.extractArtifacts) {
+        if (request.extractArtifacts || request.flattenArtifacts) {
           // Extract artifacts
-          const artifactFiles = extractArtifactFiles(data);
+          const artifactFiles = extractArtifactFiles(data, request.artifactFormat || 'original');
 
           if (artifactFiles.length > 0) {
             // Create a ZIP with artifacts (and optionally conversation)
@@ -108,10 +108,21 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
               zip.file(conversationFilename, conversationContent);
             }
 
-            // Add artifact files to root or artifacts subfolder
-            const artifactsFolder = request.includeChats !== false ? zip.folder('artifacts') : zip;
-            for (const artifact of artifactFiles) {
-              artifactsFolder.file(artifact.filename, artifact.content);
+            // Add artifact files - nested and/or flat
+            // Nested: create artifacts subfolder
+            if (request.extractArtifacts) {
+              const artifactsFolder = request.includeChats !== false ? zip.folder('artifacts') : zip;
+              for (const artifact of artifactFiles) {
+                artifactsFolder.file(artifact.filename, artifact.content);
+              }
+            }
+
+            // Flat: add artifacts with conversation name prefix in same folder
+            if (request.flattenArtifacts) {
+              for (const artifact of artifactFiles) {
+                const filename = `${data.name || request.conversationId}_${artifact.filename}`;
+                zip.file(filename, artifact.content);
+              }
             }
 
             // Generate and download ZIP
@@ -158,7 +169,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
             console.log('No content to export (chats disabled, artifacts not extracted)');
             sendResponse({
               success: false,
-              error: 'Nothing to export. Enable "Include conversation text" or "Artifact files".'
+              error: 'Nothing to export. Enable "Include conversation text" or "Artifacts nested".'
             });
           } else {
             let content, filename, type;
@@ -206,12 +217,15 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         
         if (request.format === 'json' && !request.extractArtifacts) {
           // For JSON without artifact extraction, export as a single file
-          const filename = `all-conversations-${new Date().toISOString().split('T')[0]}.json`;
+          // Format: claude-exports-2025-10-31_14-30-45.json
+          const now = new Date();
+          const datetime = now.toISOString().replace(/[:.]/g, '-').slice(0, 19).replace('T', '_');
+          const filename = `claude-exports-${datetime}.json`;
           console.log('Downloading all conversations as JSON:', filename);
           downloadFile(JSON.stringify(conversations, null, 2), filename);
           sendResponse({ success: true, count: conversations.length });
-        } else if (request.extractArtifacts) {
-          // When extracting artifacts, always create a ZIP
+        } else if (request.extractArtifacts || request.flattenArtifacts) {
+          // When extracting artifacts (nested or flat), always create a ZIP
           const zip = new JSZip();
           let processed = 0;
           let included = 0;
@@ -227,7 +241,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
               fullConv.model = inferModel(fullConv);
 
               // Extract artifacts first to check if this conversation should be included
-              const artifactFiles = extractArtifactFiles(fullConv);
+              const artifactFiles = extractArtifactFiles(fullConv, request.artifactFormat || 'original');
 
               // If chats are disabled and no artifacts, skip this conversation
               if (request.includeChats === false && artifactFiles.length === 0) {
@@ -258,11 +272,22 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                 convFolder.file(conversationFilename, conversationContent);
               }
 
-              // Add artifact files
+              // Add artifact files - nested and/or flat
               if (artifactFiles.length > 0) {
-                const artifactsFolder = request.includeChats !== false ? convFolder.folder('artifacts') : convFolder;
-                for (const artifact of artifactFiles) {
-                  artifactsFolder.file(artifact.filename, artifact.content);
+                // Nested: create artifacts subfolder
+                if (request.extractArtifacts) {
+                  const artifactsFolder = request.includeChats !== false ? convFolder.folder('artifacts') : convFolder;
+                  for (const artifact of artifactFiles) {
+                    artifactsFolder.file(artifact.filename, artifact.content);
+                  }
+                }
+
+                // Flat: add artifacts with conversation name prefix in same folder
+                if (request.flattenArtifacts) {
+                  for (const artifact of artifactFiles) {
+                    const artifactFilename = `${folderName}_${artifact.filename}`;
+                    convFolder.file(artifactFilename, artifact.content);
+                  }
                 }
               }
 
@@ -282,7 +307,10 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
-            a.download = `all-conversations-${new Date().toISOString().split('T')[0]}.zip`;
+            // Format: claude-exports-2025-10-31_14-30-45.zip
+            const now = new Date();
+            const datetime = now.toISOString().replace(/[:.]/g, '-').slice(0, 19).replace('T', '_');
+            a.download = `claude-exports-${datetime}.zip`;
             document.body.appendChild(a);
             a.click();
             document.body.removeChild(a);

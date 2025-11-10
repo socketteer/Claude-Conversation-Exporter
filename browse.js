@@ -47,6 +47,8 @@ function toggleTheme() {
 // State management
 let allConversations = [];
 let filteredConversations = [];
+let allProjects = [];
+let projectsMap = {}; // Map project UUID to project name
 let orgId = null;
 let currentSort = 'updated_desc';
 let sortStack = []; // Track multi-level sorting: [{field: 'name', direction: 'asc'}, ...]
@@ -122,35 +124,76 @@ async function loadOrgId() {
   });
 }
 
+// Load projects from API
+async function loadProjects() {
+  if (!orgId) return [];
+
+  try {
+    const response = await fetch(`https://claude.ai/api/organizations/${orgId}/projects`, {
+      credentials: 'include',
+      headers: {
+        'Accept': 'application/json',
+      }
+    });
+
+    if (!response.ok) {
+      console.warn(`Failed to load projects: ${response.status}`);
+      return [];
+    }
+
+    const projects = await response.json();
+    console.log(`Loaded ${projects.length} projects:`, projects);
+
+    // Store projects globally and build map
+    allProjects = projects;
+    projectsMap = {};
+    projects.forEach(project => {
+      const projectId = project.uuid || project.id;
+      const projectName = project.name || project.title || 'Untitled Project';
+      projectsMap[projectId] = projectName;
+    });
+
+    return projects;
+  } catch (error) {
+    console.warn('Error loading projects:', error);
+    return [];
+  }
+}
+
 // Load all conversations
 async function loadConversations() {
   if (!orgId) return;
-  
+
   try {
+    // Load projects first
+    const projects = await loadProjects();
+    populateProjectFilter(projects);
+
     const response = await fetch(`https://claude.ai/api/organizations/${orgId}/chat_conversations`, {
       credentials: 'include',
       headers: {
         'Accept': 'application/json',
       }
     });
-    
+
     if (!response.ok) {
       throw new Error(`Failed to load conversations: ${response.status}`);
     }
-    
+
     allConversations = await response.json();
     console.log(`Loaded ${allConversations.length} conversations`);
-    
+
+    // Log first conversation to see structure
+    if (allConversations.length > 0) {
+      console.log('Sample conversation structure:', allConversations[0]);
+    }
+
     // Infer models for conversations with null model
     allConversations = allConversations.map(conv => ({
       ...conv,
       model: inferModel(conv)
     }));
-    
-    // Extract unique models for filter
-    const models = [...new Set(allConversations.map(c => c.model))].filter(m => m).sort();
-    populateModelFilter(models);
-    
+
     // Apply initial sort and display
     applyFiltersAndSort();
     
@@ -160,22 +203,40 @@ async function loadConversations() {
   }
 }
 
-// Populate model filter dropdown
-function populateModelFilter(models) {
-  const modelFilter = document.getElementById('modelFilter');
-  modelFilter.innerHTML = '<option value="">All Models</option>';
-  
-  models.forEach(model => {
+// Populate project filter dropdown
+function populateProjectFilter(projects) {
+  const projectFilter = document.getElementById('projectFilter');
+  if (!projectFilter) return;
+
+  projectFilter.innerHTML = '<option value="">All Projects</option>';
+
+  if (!projects || projects.length === 0) {
+    console.log('No projects available');
+    return;
+  }
+
+  // Add each project to dropdown
+  projects.forEach(project => {
     const option = document.createElement('option');
-    option.value = model;
-    option.textContent = formatModelName(model);
-    modelFilter.appendChild(option);
+    // Use uuid as value (most likely field name)
+    option.value = project.uuid || project.id;
+    option.textContent = project.name || project.title || 'Untitled Project';
+    projectFilter.appendChild(option);
   });
+
+  console.log(`Populated ${projects.length} projects in dropdown`);
 }
 
 // Format model name for display
 function formatModelName(model) {
   return MODEL_DISPLAY_NAMES[model] || model;
+}
+
+// Get project name for a conversation
+function getProjectName(conversation) {
+  const projectId = conversation.project_uuid || conversation.project_id || conversation.projectUuid;
+  if (!projectId) return '-';
+  return projectsMap[projectId] || '-';
 }
 
 // Get model badge class
@@ -189,7 +250,7 @@ function getModelBadgeClass(model) {
 // Apply filters and sorting
 function applyFiltersAndSort() {
   const searchTerm = document.getElementById('searchInput').value.toLowerCase();
-  const modelFilter = document.getElementById('modelFilter').value;
+  const projectFilter = document.getElementById('projectFilter')?.value;
 
   // Filter conversations
   filteredConversations = allConversations.filter(conv => {
@@ -197,9 +258,13 @@ function applyFiltersAndSort() {
       conv.name.toLowerCase().includes(searchTerm) ||
       (conv.summary && conv.summary.toLowerCase().includes(searchTerm));
 
-    const matchesModel = !modelFilter || conv.model === modelFilter;
+    // Project filtering - check various possible field names
+    const matchesProject = !projectFilter ||
+      conv.project_uuid === projectFilter ||
+      conv.project_id === projectFilter ||
+      conv.projectUuid === projectFilter;
 
-    return matchesSearch && matchesModel;
+    return matchesSearch && matchesProject;
   });
 
   // Sort conversations
@@ -230,6 +295,10 @@ function sortConversations() {
         case 'name':
           aVal = a.name.toLowerCase();
           bVal = b.name.toLowerCase();
+          break;
+        case 'project':
+          aVal = getProjectName(a).toLowerCase();
+          bVal = getProjectName(b).toLowerCase();
           break;
         case 'created':
           aVal = new Date(a.created_at);
@@ -306,6 +375,7 @@ function displayConversations() {
       <thead>
         <tr>
           <th class="sortable" data-sort="name">Name${getSortIndicator('name')}</th>
+          <th class="sortable" data-sort="project">Project${getSortIndicator('project')}</th>
           <th class="sortable" data-sort="updated">Last Updated${getSortIndicator('updated')}</th>
           <th class="sortable" data-sort="created">Created${getSortIndicator('created')}</th>
           <th class="sortable" data-sort="model">Model${getSortIndicator('model')}</th>
@@ -322,6 +392,7 @@ function displayConversations() {
     const updatedDate = new Date(conv.updated_at).toLocaleDateString();
     const createdDate = new Date(conv.created_at).toLocaleDateString();
     const modelBadgeClass = getModelBadgeClass(conv.model);
+    const projectName = getProjectName(conv);
 
     html += `
       <tr data-id="${conv.uuid}">
@@ -332,6 +403,7 @@ function displayConversations() {
             </a>
           </div>
         </td>
+        <td>${projectName}</td>
         <td class="date">${updatedDate}</td>
         <td class="date">${createdDate}</td>
         <td>
@@ -504,6 +576,8 @@ async function exportConversation(conversationId, conversationName) {
   const includeMetadata = document.getElementById('includeMetadata').checked;
   const includeArtifacts = document.getElementById('includeArtifacts').checked;
   const extractArtifacts = document.getElementById('extractArtifacts').checked;
+  const artifactFormat = document.getElementById('artifactFormat').value;
+  const flattenArtifacts = document.getElementById('flattenArtifacts').checked;
 
   try {
     showToast(`Exporting ${conversationName}...`);
@@ -528,8 +602,8 @@ async function exportConversation(conversationId, conversationName) {
     data.model = inferModel(data);
 
     // Check if we need to extract artifacts to separate files
-    if (extractArtifacts) {
-      const artifactFiles = extractArtifactFiles(data);
+    if (extractArtifacts || flattenArtifacts) {
+      const artifactFiles = extractArtifactFiles(data, artifactFormat);
 
       if (artifactFiles.length > 0) {
         // Create a ZIP with artifacts (and optionally conversation)
@@ -555,10 +629,21 @@ async function exportConversation(conversationId, conversationName) {
           zip.file(conversationFilename, conversationContent);
         }
 
-        // Add artifact files to root or artifacts subfolder
-        const artifactsFolder = includeChats !== false ? zip.folder('artifacts') : zip;
-        for (const artifact of artifactFiles) {
-          artifactsFolder.file(artifact.filename, artifact.content);
+        // Add artifact files - nested and/or flat
+        // Nested: create artifacts subfolder
+        if (extractArtifacts) {
+          const artifactsFolder = includeChats !== false ? zip.folder('artifacts') : zip;
+          for (const artifact of artifactFiles) {
+            artifactsFolder.file(artifact.filename, artifact.content);
+          }
+        }
+
+        // Flat: add artifacts with conversation name prefix in same folder
+        if (flattenArtifacts) {
+          for (const artifact of artifactFiles) {
+            const filename = `${conversationName}_${artifact.filename}`;
+            zip.file(filename, artifact.content);
+          }
         }
 
         // Generate and download ZIP
@@ -599,7 +684,7 @@ async function exportConversation(conversationId, conversationName) {
       // Normal export without artifact extraction
       if (includeChats === false) {
         // If chats are disabled and we're not extracting artifacts, there's nothing to export
-        showToast('Nothing to export. Enable "Chats" or "Artifact files".', true);
+        showToast('Nothing to export. Enable "Chats" or "Artifacts nested".', true);
       } else {
         let content, filename, type;
         switch (format) {
@@ -636,6 +721,8 @@ async function exportAllFiltered() {
   const includeMetadata = document.getElementById('includeMetadata').checked;
   const includeArtifacts = document.getElementById('includeArtifacts').checked;
   const extractArtifacts = document.getElementById('extractArtifacts').checked;
+  const artifactFormat = document.getElementById('artifactFormat').value;
+  const flattenArtifacts = document.getElementById('flattenArtifacts').checked;
 
   const button = document.getElementById('exportAllBtn');
   button.disabled = true;
@@ -704,11 +791,12 @@ async function exportAllFiltered() {
           data.model = inferModel(data);
 
           // Extract artifacts first to check if this conversation should be included
-          const artifactFiles = extractArtifactFiles(data);
+          const artifactFiles = extractArtifactFiles(data, artifactFormat);
 
           // If chats are disabled and no artifacts, skip this conversation
           if (includeChats === false && artifactFiles.length === 0) {
             console.log(`Skipping ${conv.name} - no artifacts found (chats disabled)`);
+            completed++; // Count as completed even though skipped
             return; // Skip this conversation in the promise
           }
 
@@ -730,8 +818,8 @@ async function exportAllFiltered() {
               filename = `${safeName}.json`;
           }
 
-          // If extracting artifacts, create folder structure
-          if (extractArtifacts) {
+          // If extracting artifacts (nested or flat), create folder structure
+          if (extractArtifacts || flattenArtifacts) {
             const convFolder = zip.folder(safeName);
 
             // Add conversation file only if includeChats is true
@@ -739,11 +827,22 @@ async function exportAllFiltered() {
               convFolder.file(filename, content);
             }
 
-            // Add artifact files
+            // Add artifact files - nested and/or flat
             if (artifactFiles.length > 0) {
-              const artifactsFolder = includeChats !== false ? convFolder.folder('artifacts') : convFolder;
-              for (const artifact of artifactFiles) {
-                artifactsFolder.file(artifact.filename, artifact.content);
+              // Nested: create artifacts subfolder
+              if (extractArtifacts) {
+                const artifactsFolder = includeChats !== false ? convFolder.folder('artifacts') : convFolder;
+                for (const artifact of artifactFiles) {
+                  artifactsFolder.file(artifact.filename, artifact.content);
+                }
+              }
+
+              // Flat: add artifacts with conversation name prefix in same folder
+              if (flattenArtifacts) {
+                for (const artifact of artifactFiles) {
+                  const artifactFilename = `${safeName}_${artifact.filename}`;
+                  convFolder.file(artifactFilename, artifact.content);
+                }
               }
             }
           } else {
@@ -800,7 +899,10 @@ async function exportAllFiltered() {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `claude-conversations-${new Date().toISOString().split('T')[0]}.zip`;
+    // Format: claude-exports-2025-10-31_14-30-45.zip
+    const now = new Date();
+    const datetime = now.toISOString().replace(/[:.]/g, '-').slice(0, 19).replace('T', '_');
+    a.download = `claude-exports-${datetime}.zip`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -891,15 +993,12 @@ function setupEventListeners() {
     applyFiltersAndSort();
   });
   
-  // Model filter
-  document.getElementById('modelFilter').addEventListener('change', applyFiltersAndSort);
-  
-  // Sort dropdown
-  document.getElementById('sortBy').addEventListener('change', (e) => {
-    currentSort = e.target.value;
-    applyFiltersAndSort();
-  });
-  
+  // Project filter (not yet implemented - just placeholder)
+  const projectFilter = document.getElementById('projectFilter');
+  if (projectFilter) {
+    projectFilter.addEventListener('change', applyFiltersAndSort);
+  }
+
   // Export all button
   document.getElementById('exportAllBtn').addEventListener('click', exportAllFiltered);
 }

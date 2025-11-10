@@ -147,12 +147,12 @@
       display: flex;
       gap: 15px;
       align-items: center;
-      flex-wrap: wrap;
+      justify-content: space-between;
     }
     
     .search-box {
-      flex: 1;
-      min-width: 300px;
+      flex-grow: 1;
+      max-width: 500px;
       position: relative;
     }
     
@@ -238,7 +238,7 @@
     }
     
     .container {
-      max-width: 1400px;
+      max-width: 1600px;
       margin: 20px auto;
       padding: 0 20px;
     }
@@ -527,83 +527,105 @@
 <body>
   <div class="header">
     <div class="header-top">
-      <button class="theme-toggle" id="themeToggle" aria-label="Toggle theme">
-        <svg class="sun-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <circle cx="12" cy="12" r="5" stroke-width="2"/>
-          <line x1="12" y1="1" x2="12" y2="3" stroke-width="2"/>
-          <line x1="12" y1="21" x2="12" y2="23" stroke-width="2"/>
-          <line x1="4.22" y1="4.22" x2="5.64" y2="5.64" stroke-width="2"/>
-          <line x1="18.36" y1="18.36" x2="19.78" y2="19.78" stroke-width="2"/>
-          <line x1="1" y1="12" x2="3" y2="12" stroke-width="2"/>
-          <line x1="21" y1="12" x2="23" y2="12" stroke-width="2"/>
-          <line x1="4.22" y1="19.78" x2="5.64" y2="18.36" stroke-width="2"/>
-          <line x1="18.36" y1="5.64" x2="19.78" y2="4.22" stroke-width="2"/>
-        </svg>
-        <svg class="moon-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="display: none;">
-          <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" stroke-width="2"/>
-        </svg>
-      </button>
-      <h1>Browse Claude Conversations</h1>
+      <div class="header-left">
+        <button class="theme-toggle" id="themeToggle" aria-label="Toggle theme">
+          <svg class="sun-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <circle cx="12" cy="12" r="5" stroke-width="2"/>
+            <line x1="12" y1="1" x2="12" y2="3" stroke-width="2"/>
+            <line x1="12" y1="21" x2="12" y2="23" stroke-width="2"/>
+            <line x1="4.22" y1="4.22" x2="5.64" y2="5.64" stroke-width="2"/>
+            <line x1="18.36" y1="18.36" x2="19.78" y2="19.78" stroke-width="2"/>
+            <line x1="1" y1="12" x2="3" y2="12" stroke-width="2"/>
+            <line x1="21" y1="12" x2="23" y2="12" stroke-width="2"/>
+            <line x1="4.22" y1="19.78" x2="5.64" y2="18.36" stroke-width="2"/>
+            <line x1="18.36" y1="5.64" x2="19.78" y2="4.22" stroke-width="2"/>
+          </svg>
+          <svg class="moon-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="display: none;">
+            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" stroke-width="2"/>
+          </svg>
+        </button>
+        <h1>Browse Claude Conversations</h1>
+      </div>
+
+      <div class="header-right">
+        <div class="stats" id="stats">
+          Loading...
+        </div>
+      </div>
     </div>
+
     <div class="controls">
+      <div class="filter-group">
+        <label>Project:</label>
+        <select id="projectFilter">
+          <option value="">All Projects</option>
+        </select>
+      </div>
+
       <div class="search-box" id="searchBox">
         <input type="text" id="searchInput" placeholder="Search conversations by name...">
         <button class="clear-btn" id="clearSearch">✕</button>
       </div>
-      
-      <div class="filter-group">
-        <label>Model:</label>
-        <select id="modelFilter">
-          <option value="">All Models</option>
-        </select>
+
+      <div class="export-controls-wrapper">
+        <div class="export-settings">
+          <div class="export-row">
+            <div class="export-section chat-section">
+              <label>
+                Chat format:
+                <select id="exportFormat">
+                  <option value="json">JSON</option>
+                  <option value="markdown">Markdown</option>
+                  <option value="text">Plain Text</option>
+                </select>
+              </label>
+
+              <label title="Include the conversation messages in the exported file">
+                <input type="checkbox" id="includeChats" checked>
+                Chats
+              </label>
+
+              <label title="Add conversation metadata (name, date, model, etc.) at the top of exported files">
+                <input type="checkbox" id="includeMetadata" checked>
+                Metadata
+              </label>
+            </div>
+
+            <div class="section-divider"></div>
+
+            <div class="export-section artifact-section">
+              <label>
+                Artifact format:
+                <select id="artifactFormat">
+                  <option value="original">Original</option>
+                  <option value="markdown">Markdown</option>
+                  <option value="text">Plain Text</option>
+                  <option value="json">JSON</option>
+                </select>
+              </label>
+
+              <label title="Include artifacts (code, documents, etc.) directly within the conversation text">
+                <input type="checkbox" id="includeArtifacts">
+                Artifacts inline
+              </label>
+
+              <label title="Extract artifacts as separate files in nested folders">
+                <input type="checkbox" id="extractArtifacts">
+                Artifacts nested
+              </label>
+
+              <label title="Flatten artifact structure (no subfolders, with conversation name prefix)">
+                <input type="checkbox" id="flattenArtifacts">
+                Artifacts flat
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <button class="export-all-btn" id="exportAllBtn" disabled>
+          Export All
+        </button>
       </div>
-      
-      <div class="filter-group">
-        <label>Sort by:</label>
-        <select id="sortBy">
-          <option value="updated_desc">Recently Updated</option>
-          <option value="updated_asc">Oldest Updated</option>
-          <option value="created_desc">Recently Created</option>
-          <option value="created_asc">Oldest Created</option>
-          <option value="name_asc">Name (A-Z)</option>
-          <option value="name_desc">Name (Z-A)</option>
-        </select>
-      </div>
-      
-      <div class="stats" id="stats">
-        Loading...
-      </div>
-      
-      <div class="export-settings">
-        <label>
-          Format:
-          <select id="exportFormat">
-            <option value="json">JSON</option>
-            <option value="markdown">Markdown</option>
-            <option value="text">Plain Text</option>
-          </select>
-        </label>
-        <label title="Include the conversation messages in the exported file">
-          <input type="checkbox" id="includeChats" checked>
-          Chats
-        </label>
-        <label title="Add conversation metadata (name, date, model, etc.) at the top of exported files">
-          <input type="checkbox" id="includeMetadata" checked>
-          Metadata
-        </label>
-        <label title="Include artifacts (code, documents, etc.) directly within the conversation text">
-          <input type="checkbox" id="includeArtifacts">
-          Artifacts inline
-        </label>
-        <label title="Extract artifacts as separate files in a folder">
-          <input type="checkbox" id="extractArtifacts">
-          Artifact files
-        </label>
-      </div>
-      
-      <button class="export-all-btn" id="exportAllBtn" disabled>
-        Export All
-      </button>
     </div>
   </div>
   
@@ -620,6 +642,35 @@
   
   <!-- Export options moved to header for better visibility -->
   <style>
+    .header-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      width: 100%;
+      gap: 20px;
+    }
+    .header-left {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+      flex-shrink: 0;
+    }
+    .header-left h1 {
+      margin: 0;
+    }
+    .header-right {
+      display: flex;
+      align-items: center;
+      flex-shrink: 0;
+    }
+    .header-right .stats {
+      margin: 0;
+    }
+    .export-controls-wrapper {
+      display: flex;
+      align-items: center;
+      gap: 15px;
+    }
     .export-settings {
       display: inline-flex;
       gap: 15px;
@@ -628,12 +679,29 @@
       background: var(--secondary-bg);
       border-radius: 5px;
     }
+    .export-row {
+      display: flex;
+      gap: 20px;
+      align-items: center;
+    }
+    .export-section {
+      display: flex;
+      gap: 15px;
+      align-items: center;
+    }
+    .section-divider {
+      width: 1px;
+      height: 25px;
+      background: var(--input-border);
+      align-self: center;
+    }
     .export-settings label {
       display: flex;
       align-items: center;
       gap: 5px;
       font-size: 13px;
       color: var(--text-secondary);
+      white-space: nowrap;
     }
     .export-settings select {
       padding: 4px 8px;

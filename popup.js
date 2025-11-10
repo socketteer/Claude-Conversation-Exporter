@@ -99,7 +99,9 @@ document.getElementById('exportCurrent').addEventListener('click', async () => {
       includeChats: document.getElementById('includeChats').checked,
       includeMetadata: document.getElementById('includeMetadata').checked,
       includeArtifacts: document.getElementById('includeArtifacts').checked,
-      extractArtifacts: document.getElementById('extractArtifacts').checked
+      extractArtifacts: document.getElementById('extractArtifacts').checked,
+      artifactFormat: document.getElementById('artifactFormat').value,
+      flattenArtifacts: document.getElementById('flattenArtifacts').checked
     }, (response) => {
       if (chrome.runtime.lastError) {
         console.error('Chrome runtime error:', chrome.runtime.lastError);
@@ -150,7 +152,9 @@ document.getElementById('exportCurrent').addEventListener('click', async () => {
       includeChats: document.getElementById('includeChats').checked,
       includeMetadata: document.getElementById('includeMetadata').checked,
       includeArtifacts: document.getElementById('includeArtifacts').checked,
-      extractArtifacts: document.getElementById('extractArtifacts').checked
+      extractArtifacts: document.getElementById('extractArtifacts').checked,
+      artifactFormat: document.getElementById('artifactFormat').value,
+      flattenArtifacts: document.getElementById('flattenArtifacts').checked
     }, (response) => {
       if (chrome.runtime.lastError) {
         console.error('Chrome runtime error:', chrome.runtime.lastError);
