@@ -599,7 +599,7 @@ async function exportConversation(conversationId, conversationName) {
       // Normal export without artifact extraction
       if (includeChats === false) {
         // If chats are disabled and we're not extracting artifacts, there's nothing to export
-        showToast('Nothing to export. Enable "Chats" or "Artifact files".', true);
+        showToast('Nothing to export. Enable "Chats" or "Artifacts nested".', true);
       } else {
         let content, filename, type;
         switch (format) {
