@@ -20,20 +20,23 @@ document.addEventListener('DOMContentLoaded', async () => {
   const includeChatsCheckbox = document.getElementById('includeChats');
   const includeThinkingCheckbox = document.getElementById('includeThinking');
   const includeMetadataCheckbox = document.getElementById('includeMetadata');
+  const includeMemoryCheckbox = document.getElementById('includeMemory');
   const includeArtifactsCheckbox = document.getElementById('includeArtifacts');
 
   function updateCheckboxStates() {
     const chatsEnabled = includeChatsCheckbox.checked;
 
-    // Disable thinking, metadata and inline artifacts when chats is unchecked
+    // Disable thinking, metadata, memory and inline artifacts when chats is unchecked
     includeThinkingCheckbox.disabled = !chatsEnabled;
     includeMetadataCheckbox.disabled = !chatsEnabled;
+    includeMemoryCheckbox.disabled = !chatsEnabled;
     includeArtifactsCheckbox.disabled = !chatsEnabled;
 
     // Optionally uncheck them when disabled
     if (!chatsEnabled) {
       includeThinkingCheckbox.checked = false;
       includeMetadataCheckbox.checked = false;
+      includeMemoryCheckbox.checked = false;
       includeArtifactsCheckbox.checked = false;
     }
   }
@@ -102,6 +105,7 @@ document.getElementById('exportCurrent').addEventListener('click', async () => {
       includeChats: document.getElementById('includeChats').checked,
       includeThinking: document.getElementById('includeThinking').checked,
       includeMetadata: document.getElementById('includeMetadata').checked,
+      includeMemory: document.getElementById('includeMemory').checked,
       includeArtifacts: document.getElementById('includeArtifacts').checked,
       extractArtifacts: document.getElementById('extractArtifacts').checked,
       artifactFormat: document.getElementById('artifactFormat').value,

@@ -575,6 +575,7 @@ async function exportConversation(conversationId, conversationName) {
   const includeChats = document.getElementById('includeChats').checked;
   const includeThinking = document.getElementById('includeThinking').checked;
   const includeMetadata = document.getElementById('includeMetadata').checked;
+  const includeMemory = document.getElementById('includeMemory').checked;
   const includeArtifacts = document.getElementById('includeArtifacts').checked;
   const extractArtifacts = document.getElementById('extractArtifacts').checked;
   const artifactFormat = document.getElementById('artifactFormat').value;
@@ -721,6 +722,7 @@ async function exportAllFiltered() {
   const includeChats = document.getElementById('includeChats').checked;
   const includeThinking = document.getElementById('includeThinking').checked;
   const includeMetadata = document.getElementById('includeMetadata').checked;
+  const includeMemory = document.getElementById('includeMemory').checked;
   const includeArtifacts = document.getElementById('includeArtifacts').checked;
   const extractArtifacts = document.getElementById('extractArtifacts').checked;
   const artifactFormat = document.getElementById('artifactFormat').value;
@@ -967,20 +969,23 @@ function setupEventListeners() {
   const includeChatsCheckbox = document.getElementById('includeChats');
   const includeThinkingCheckbox = document.getElementById('includeThinking');
   const includeMetadataCheckbox = document.getElementById('includeMetadata');
+  const includeMemoryCheckbox = document.getElementById('includeMemory');
   const includeArtifactsCheckbox = document.getElementById('includeArtifacts');
 
   function updateCheckboxStates() {
     const chatsEnabled = includeChatsCheckbox.checked;
 
-    // Disable thinking, metadata and inline artifacts when chats is unchecked
+    // Disable thinking, metadata, memory and inline artifacts when chats is unchecked
     includeThinkingCheckbox.disabled = !chatsEnabled;
     includeMetadataCheckbox.disabled = !chatsEnabled;
+    includeMemoryCheckbox.disabled = !chatsEnabled;
     includeArtifactsCheckbox.disabled = !chatsEnabled;
 
     // Optionally uncheck them when disabled
     if (!chatsEnabled) {
       includeThinkingCheckbox.checked = false;
       includeMetadataCheckbox.checked = false;
+      includeMemoryCheckbox.checked = false;
       includeArtifactsCheckbox.checked = false;
     }
   }
