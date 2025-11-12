@@ -573,6 +573,7 @@ function updateStats() {
 async function exportConversation(conversationId, conversationName) {
   const format = document.getElementById('exportFormat').value;
   const includeChats = document.getElementById('includeChats').checked;
+  const includeThinking = document.getElementById('includeThinking').checked;
   const includeMetadata = document.getElementById('includeMetadata').checked;
   const includeArtifacts = document.getElementById('includeArtifacts').checked;
   const extractArtifacts = document.getElementById('extractArtifacts').checked;
@@ -614,11 +615,11 @@ async function exportConversation(conversationId, conversationName) {
           let conversationContent, conversationFilename;
           switch (format) {
             case 'markdown':
-              conversationContent = convertToMarkdown(data, includeMetadata, conversationId, includeArtifacts);
+              conversationContent = convertToMarkdown(data, includeMetadata, conversationId, includeArtifacts, includeThinking);
               conversationFilename = `${conversationName || conversationId}.md`;
               break;
             case 'text':
-              conversationContent = convertToText(data, includeMetadata, includeArtifacts);
+              conversationContent = convertToText(data, includeMetadata, includeArtifacts, includeThinking);
               conversationFilename = `${conversationName || conversationId}.txt`;
               break;
             default:
@@ -663,12 +664,12 @@ async function exportConversation(conversationId, conversationName) {
         let content, filename, type;
         switch (format) {
           case 'markdown':
-            content = convertToMarkdown(data, includeMetadata, conversationId, includeArtifacts);
+            content = convertToMarkdown(data, includeMetadata, conversationId, includeArtifacts, includeThinking);
             filename = `${conversationName || conversationId}.md`;
             type = 'text/markdown';
             break;
           case 'text':
-            content = convertToText(data, includeMetadata, includeArtifacts);
+            content = convertToText(data, includeMetadata, includeArtifacts, includeThinking);
             filename = `${conversationName || conversationId}.txt`;
             type = 'text/plain';
             break;
@@ -689,12 +690,12 @@ async function exportConversation(conversationId, conversationName) {
         let content, filename, type;
         switch (format) {
           case 'markdown':
-            content = convertToMarkdown(data, includeMetadata, conversationId, includeArtifacts);
+            content = convertToMarkdown(data, includeMetadata, conversationId, includeArtifacts, includeThinking);
             filename = `${conversationName || conversationId}.md`;
             type = 'text/markdown';
             break;
           case 'text':
-            content = convertToText(data, includeMetadata, includeArtifacts);
+            content = convertToText(data, includeMetadata, includeArtifacts, includeThinking);
             filename = `${conversationName || conversationId}.txt`;
             type = 'text/plain';
             break;
@@ -718,6 +719,7 @@ async function exportConversation(conversationId, conversationName) {
 async function exportAllFiltered() {
   const format = document.getElementById('exportFormat').value;
   const includeChats = document.getElementById('includeChats').checked;
+  const includeThinking = document.getElementById('includeThinking').checked;
   const includeMetadata = document.getElementById('includeMetadata').checked;
   const includeArtifacts = document.getElementById('includeArtifacts').checked;
   const extractArtifacts = document.getElementById('extractArtifacts').checked;
@@ -806,11 +808,11 @@ async function exportAllFiltered() {
 
           switch (format) {
             case 'markdown':
-              content = convertToMarkdown(data, includeMetadata, conv.uuid, includeArtifacts);
+              content = convertToMarkdown(data, includeMetadata, conv.uuid, includeArtifacts, includeThinking);
               filename = `${safeName}.md`;
               break;
             case 'text':
-              content = convertToText(data, includeMetadata, includeArtifacts);
+              content = convertToText(data, includeMetadata, includeArtifacts, includeThinking);
               filename = `${safeName}.txt`;
               break;
             default: // json
@@ -963,18 +965,21 @@ function showToast(message, isError = false) {
 function setupEventListeners() {
   // Handle checkbox dependencies
   const includeChatsCheckbox = document.getElementById('includeChats');
+  const includeThinkingCheckbox = document.getElementById('includeThinking');
   const includeMetadataCheckbox = document.getElementById('includeMetadata');
   const includeArtifactsCheckbox = document.getElementById('includeArtifacts');
 
   function updateCheckboxStates() {
     const chatsEnabled = includeChatsCheckbox.checked;
 
-    // Disable metadata and inline artifacts when chats is unchecked
+    // Disable thinking, metadata and inline artifacts when chats is unchecked
+    includeThinkingCheckbox.disabled = !chatsEnabled;
     includeMetadataCheckbox.disabled = !chatsEnabled;
     includeArtifactsCheckbox.disabled = !chatsEnabled;
 
     // Optionally uncheck them when disabled
     if (!chatsEnabled) {
+      includeThinkingCheckbox.checked = false;
       includeMetadataCheckbox.checked = false;
       includeArtifactsCheckbox.checked = false;
     }

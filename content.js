@@ -93,11 +93,11 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
               let conversationContent, conversationFilename;
               switch (request.format) {
                 case 'markdown':
-                  conversationContent = convertToMarkdown(data, request.includeMetadata, request.conversationId, request.includeArtifacts);
+                  conversationContent = convertToMarkdown(data, request.includeMetadata, request.conversationId, request.includeArtifacts, request.includeThinking);
                   conversationFilename = `${data.name || request.conversationId}.md`;
                   break;
                 case 'text':
-                  conversationContent = convertToText(data, request.includeMetadata, request.includeArtifacts);
+                  conversationContent = convertToText(data, request.includeMetadata, request.includeArtifacts, request.includeThinking);
                   conversationFilename = `${data.name || request.conversationId}.txt`;
                   break;
                 default:
@@ -144,12 +144,12 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
             let content, filename, type;
             switch (request.format) {
               case 'markdown':
-                content = convertToMarkdown(data, request.includeMetadata, request.conversationId, request.includeArtifacts);
+                content = convertToMarkdown(data, request.includeMetadata, request.conversationId, request.includeArtifacts, request.includeThinking);
                 filename = `${data.name || request.conversationId}.md`;
                 type = 'text/markdown';
                 break;
               case 'text':
-                content = convertToText(data, request.includeMetadata, request.includeArtifacts);
+                content = convertToText(data, request.includeMetadata, request.includeArtifacts, request.includeThinking);
                 filename = `${data.name || request.conversationId}.txt`;
                 type = 'text/plain';
                 break;
@@ -175,12 +175,12 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
             let content, filename, type;
             switch (request.format) {
               case 'markdown':
-                content = convertToMarkdown(data, request.includeMetadata, request.conversationId, request.includeArtifacts);
+                content = convertToMarkdown(data, request.includeMetadata, request.conversationId, request.includeArtifacts, request.includeThinking);
                 filename = `${data.name || request.conversationId}.md`;
                 type = 'text/markdown';
                 break;
               case 'text':
-                content = convertToText(data, request.includeMetadata, request.includeArtifacts);
+                content = convertToText(data, request.includeMetadata, request.includeArtifacts, request.includeThinking);
                 filename = `${data.name || request.conversationId}.txt`;
                 type = 'text/plain';
                 break;
@@ -271,10 +271,10 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                 if (request.includeChats !== false) {
                   let conversationContent, conversationFilename;
                   if (request.format === 'markdown') {
-                    conversationContent = convertToMarkdown(fullConv, request.includeMetadata, conv.uuid, request.includeArtifacts);
+                    conversationContent = convertToMarkdown(fullConv, request.includeMetadata, conv.uuid, request.includeArtifacts, request.includeThinking);
                     conversationFilename = `${folderName}.md`;
                   } else if (request.format === 'text') {
-                    conversationContent = convertToText(fullConv, request.includeMetadata, request.includeArtifacts);
+                    conversationContent = convertToText(fullConv, request.includeMetadata, request.includeArtifacts, request.includeThinking);
                     conversationFilename = `${folderName}.txt`;
                   } else {
                     conversationContent = JSON.stringify(fullConv, null, 2);
@@ -358,11 +358,11 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
               let content, filename, type;
 
               if (request.format === 'markdown') {
-                content = convertToMarkdown(fullConv, request.includeMetadata, conv.uuid, request.includeArtifacts);
+                content = convertToMarkdown(fullConv, request.includeMetadata, conv.uuid, request.includeArtifacts, request.includeThinking);
                 filename = `${conv.name || conv.uuid}.md`;
                 type = 'text/markdown';
               } else {
-                content = convertToText(fullConv, request.includeMetadata, request.includeArtifacts);
+                content = convertToText(fullConv, request.includeMetadata, request.includeArtifacts, request.includeThinking);
                 filename = `${conv.name || conv.uuid}.txt`;
                 type = 'text/plain';
               }

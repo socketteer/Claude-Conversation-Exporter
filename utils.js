@@ -31,8 +31,8 @@ function getCurrentBranch(data) {
 }
 
 // Convert to markdown format
-function convertToMarkdown(data, includeMetadata, conversationId = null, includeArtifacts = true) {
-  console.log('🔧 convertToMarkdown - conversationId:', conversationId, 'includeArtifacts:', includeArtifacts);
+function convertToMarkdown(data, includeMetadata, conversationId = null, includeArtifacts = true, includeThinking = true) {
+  console.log('🔧 convertToMarkdown - conversationId:', conversationId, 'includeArtifacts:', includeArtifacts, 'includeThinking:', includeThinking);
   let markdown = `# ${data.name || 'Untitled Conversation'}\n\n`;
 
   if (includeMetadata) {
@@ -68,7 +68,7 @@ function convertToMarkdown(data, includeMetadata, conversationId = null, include
     if (message.content) {
       for (const content of message.content) {
         // Handle thinking blocks (extended thinking)
-        if (content.type === 'thinking' && content.thinking) {
+        if (content.type === 'thinking' && content.thinking && includeThinking) {
           // Get the summary if available
           const summary = content.summaries && content.summaries.length > 0
             ? content.summaries[content.summaries.length - 1].summary
@@ -110,7 +110,7 @@ function convertToMarkdown(data, includeMetadata, conversationId = null, include
 }
 
 // Convert to plain text
-function convertToText(data, includeMetadata, includeArtifacts = true) {
+function convertToText(data, includeMetadata, includeArtifacts = true, includeThinking = true) {
   let text = '';
 
   // Add metadata header if requested
@@ -135,10 +135,18 @@ function convertToText(data, includeMetadata, includeArtifacts = true) {
 
     // Get the message text (excluding artifacts)
     let messageText = '';
+    let thinkingText = '';
     if (message.content) {
       for (const content of message.content) {
+        // Handle thinking blocks
+        if (content.type === 'thinking' && content.thinking && includeThinking) {
+          const summary = content.summaries && content.summaries.length > 0
+            ? content.summaries[content.summaries.length - 1].summary
+            : 'Thought process';
+          thinkingText += `[Thinking: ${summary}]\n${content.thinking}\n[End Thinking]\n\n`;
+        }
         // Only include text content, skip tool_use
-        if (content.type === 'text' && content.text) {
+        else if (content.type === 'text' && content.text) {
           // Remove old-format artifact tags
           messageText += content.text.replace(/<antArtifact[^>]*>[\s\S]*?<\/antArtifact>/g, '').trim() + ' ';
         }
@@ -158,6 +166,11 @@ function convertToText(data, includeMetadata, includeArtifacts = true) {
     } else {
       senderLabel = assistantSeen ? 'A' : 'Assistant';
       assistantSeen = true;
+    }
+
+    // Add thinking text if present
+    if (thinkingText) {
+      text += thinkingText;
     }
 
     text += `${senderLabel}: ${messageText}\n`;
