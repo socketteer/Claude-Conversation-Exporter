@@ -590,6 +590,10 @@ async function exportConversation(conversationId, conversationName) {
               conversationContent = convertToText(data, includeMetadata, includeArtifacts, includeThinking);
               conversationFilename = `${conversationName || conversationId}.txt`;
               break;
+            case 'csv':
+              conversationContent = convertToCSV(data, includeMetadata, includeArtifacts, includeThinking);
+              conversationFilename = `${conversationName || conversationId}.csv`;
+              break;
             default:
               conversationContent = JSON.stringify(data, null, 2);
               conversationFilename = `${conversationName || conversationId}.json`;
@@ -649,6 +653,11 @@ async function exportConversation(conversationId, conversationName) {
             filename = `${conversationName || conversationId}.txt`;
             type = 'text/plain';
             break;
+          case 'csv':
+            content = convertToCSV(data, includeMetadata, includeArtifacts, includeThinking);
+            filename = `${conversationName || conversationId}.csv`;
+            type = 'text/csv';
+            break;
           default:
             content = JSON.stringify(data, null, 2);
             filename = `${conversationName || conversationId}.json`;
@@ -674,6 +683,11 @@ async function exportConversation(conversationId, conversationName) {
             content = convertToText(data, includeMetadata, includeArtifacts, includeThinking);
             filename = `${conversationName || conversationId}.txt`;
             type = 'text/plain';
+            break;
+          case 'csv':
+            content = convertToCSV(data, includeMetadata, includeArtifacts, includeThinking);
+            filename = `${conversationName || conversationId}.csv`;
+            type = 'text/csv';
             break;
           default:
             content = JSON.stringify(data, null, 2);
@@ -790,6 +804,10 @@ async function exportAllFiltered() {
             case 'text':
               content = convertToText(data, includeMetadata, includeArtifacts, includeThinking);
               filename = `${safeName}.txt`;
+              break;
+            case 'csv':
+              content = convertToCSV(data, includeMetadata, includeArtifacts, includeThinking);
+              filename = `${safeName}.csv`;
               break;
             default: // json
               content = JSON.stringify(data, null, 2);

@@ -100,6 +100,10 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                   conversationContent = convertToText(data, request.includeMetadata, request.includeArtifacts, request.includeThinking);
                   conversationFilename = `${data.name || request.conversationId}.txt`;
                   break;
+                case 'csv':
+                  conversationContent = convertToCSV(data, request.includeMetadata, request.includeArtifacts, request.includeThinking);
+                  conversationFilename = `${data.name || request.conversationId}.csv`;
+                  break;
                 default:
                   conversationContent = JSON.stringify(data, null, 2);
                   conversationFilename = `${data.name || request.conversationId}.json`;
@@ -161,6 +165,11 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                 filename = `${data.name || request.conversationId}.txt`;
                 type = 'text/plain';
                 break;
+              case 'csv':
+                content = convertToCSV(data, request.includeMetadata, request.includeArtifacts, request.includeThinking);
+                filename = `${data.name || request.conversationId}.csv`;
+                type = 'text/csv';
+                break;
               default:
                 content = JSON.stringify(data, null, 2);
                 filename = `${data.name || request.conversationId}.json`;
@@ -191,6 +200,11 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                 content = convertToText(data, request.includeMetadata, request.includeArtifacts, request.includeThinking);
                 filename = `${data.name || request.conversationId}.txt`;
                 type = 'text/plain';
+                break;
+              case 'csv':
+                content = convertToCSV(data, request.includeMetadata, request.includeArtifacts, request.includeThinking);
+                filename = `${data.name || request.conversationId}.csv`;
+                type = 'text/csv';
                 break;
               default:
                 content = JSON.stringify(data, null, 2);

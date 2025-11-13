@@ -200,6 +200,105 @@ function convertToText(data, includeMetadata, includeArtifacts = true, includeTh
   return text.trim();
 }
 
+// Helper function to escape CSV fields
+function escapeCSV(field) {
+  if (field == null) return '';
+  const str = String(field);
+  // Escape quotes by doubling them, and wrap in quotes if contains comma, quote, or newline
+  if (str.includes('"') || str.includes(',') || str.includes('\n') || str.includes('\r')) {
+    return '"' + str.replace(/"/g, '""') + '"';
+  }
+  return str;
+}
+
+// Convert to CSV format
+function convertToCSV(data, includeMetadata, includeArtifacts = true, includeThinking = true, memory = null) {
+  let csv = '';
+
+  // CSV Header
+  csv += 'Timestamp,Speaker,Type,Content\n';
+
+  // Add metadata rows if requested
+  if (includeMetadata) {
+    csv += `${escapeCSV(new Date(data.created_at).toISOString())},System,Metadata,${escapeCSV('Conversation: ' + (data.name || 'Untitled'))}\n`;
+    csv += `${escapeCSV(new Date(data.created_at).toISOString())},System,Metadata,${escapeCSV('Created: ' + new Date(data.created_at).toLocaleString())}\n`;
+    csv += `${escapeCSV(new Date(data.updated_at).toISOString())},System,Metadata,${escapeCSV('Updated: ' + new Date(data.updated_at).toLocaleString())}\n`;
+    csv += `${escapeCSV(new Date().toISOString())},System,Metadata,${escapeCSV('Model: ' + data.model)}\n`;
+  }
+
+  // Include memory if provided
+  if (memory) {
+    const memoryTimestamp = new Date().toISOString();
+    if (memory.global && memory.global.length > 0) {
+      memory.global.forEach(mem => {
+        csv += `${escapeCSV(memoryTimestamp)},System,Memory,${escapeCSV('Global: ' + mem)}\n`;
+      });
+    }
+    if (memory.project && memory.project.length > 0) {
+      memory.project.forEach(mem => {
+        csv += `${escapeCSV(memoryTimestamp)},System,Memory,${escapeCSV('Project: ' + mem)}\n`;
+      });
+    }
+  }
+
+  // Get only the current branch messages
+  const branchMessages = getCurrentBranch(data);
+
+  branchMessages.forEach((message) => {
+    const timestamp = message.created_at ? new Date(message.created_at).toISOString() : '';
+    const speaker = message.sender === 'human' ? 'Human' : 'Assistant';
+
+    // Extract artifacts from the entire message
+    const artifacts = includeArtifacts ? extractArtifactsFromMessage(message) : [];
+
+    // Get the message text
+    let messageText = '';
+    let thinkingText = '';
+
+    if (message.content) {
+      for (const content of message.content) {
+        // Handle thinking blocks
+        if (content.type === 'thinking' && content.thinking && includeThinking) {
+          const summary = content.summaries && content.summaries.length > 0
+            ? content.summaries[content.summaries.length - 1].summary
+            : 'Thought process';
+          thinkingText = `[${summary}]\n${content.thinking}`;
+        }
+        // Only include text content, skip tool_use
+        else if (content.type === 'text' && content.text) {
+          // Remove old-format artifact tags
+          messageText += content.text.replace(/<antArtifact[^>]*>[\s\S]*?<\/antArtifact>/g, '').trim() + ' ';
+        }
+      }
+    } else if (message.text) {
+      // Handle old format - remove artifact tags
+      messageText = message.text.replace(/<antArtifact[^>]*>[\s\S]*?<\/antArtifact>/g, '').trim();
+    }
+
+    messageText = messageText.trim();
+
+    // Add thinking as separate row if present
+    if (thinkingText) {
+      csv += `${escapeCSV(timestamp)},${speaker},Thinking,${escapeCSV(thinkingText)}\n`;
+    }
+
+    // Add main message
+    if (messageText) {
+      csv += `${escapeCSV(timestamp)},${speaker},Message,${escapeCSV(messageText)}\n`;
+    }
+
+    // Add artifacts if present
+    if (artifacts.length > 0) {
+      for (const artifact of artifacts) {
+        const artifactContent = `[${artifact.title}] (${artifact.language})\n${artifact.content}`;
+        csv += `${escapeCSV(timestamp)},${speaker},Artifact,${escapeCSV(artifactContent)}\n`;
+      }
+    }
+  });
+
+  return csv;
+}
+
 // Download file utility
 function downloadFile(content, filename, type = 'application/json') {
   const blob = new Blob([content], { type });
