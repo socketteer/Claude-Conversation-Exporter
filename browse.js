@@ -949,8 +949,10 @@ async function exportMemory() {
   try {
     const memory = await fetchMemory(orgId, includeGlobal, includeProject);
 
-    if (!memory.global && !memory.project) {
+    if (!memory.global && (!memory.projects || memory.projects.length === 0)) {
       showToast('No memory data found', true);
+      button.disabled = false;
+      button.textContent = originalButtonText;
       return;
     }
 

@@ -234,9 +234,13 @@ function convertToCSV(data, includeMetadata, includeArtifacts = true, includeThi
         csv += `${escapeCSV(memoryTimestamp)},System,Memory,${escapeCSV('Global: ' + mem)}\n`;
       });
     }
-    if (memory.project && memory.project.length > 0) {
-      memory.project.forEach(mem => {
-        csv += `${escapeCSV(memoryTimestamp)},System,Memory,${escapeCSV('Project: ' + mem)}\n`;
+    if (memory.projects && memory.projects.length > 0) {
+      memory.projects.forEach(project => {
+        if (project.memory && project.memory.length > 0) {
+          project.memory.forEach(mem => {
+            csv += `${escapeCSV(memoryTimestamp)},System,Memory,${escapeCSV(`${project.name}: ` + mem)}\n`;
+          });
+        }
       });
     }
   }
@@ -684,37 +688,17 @@ function extractArtifactFiles(data, artifactFormat = 'original') {
 // ============================================================================
 
 // Fetch memory data (global and project-specific) from Claude.ai
-async function fetchMemory(orgId, projectId = null) {
+async function fetchMemory(orgId, includeGlobal = true, includeProject = false) {
   const memory = {
     global: null,
-    project: null
+    projects: []
   };
 
   try {
-    // Fetch global memory
-    const globalResponse = await fetch(
-      `https://claude.ai/api/organizations/${orgId}/memories`,
-      {
-        credentials: 'include',
-        headers: {
-          'Accept': 'application/json',
-        }
-      }
-    );
-
-    if (globalResponse.ok) {
-      memory.global = await globalResponse.json();
-      console.log('📝 Fetched global memory');
-    }
-  } catch (error) {
-    console.warn('Could not fetch global memory:', error);
-  }
-
-  // Fetch project-specific memory if projectId is provided
-  if (projectId) {
-    try {
-      const projectResponse = await fetch(
-        `https://claude.ai/api/organizations/${orgId}/projects/${projectId}/memories`,
+    // Fetch global memory if requested
+    if (includeGlobal) {
+      const globalResponse = await fetch(
+        `https://claude.ai/api/organizations/${orgId}/memories`,
         {
           credentials: 'include',
           headers: {
@@ -723,12 +707,62 @@ async function fetchMemory(orgId, projectId = null) {
         }
       );
 
-      if (projectResponse.ok) {
-        memory.project = await projectResponse.json();
-        console.log('📝 Fetched project memory');
+      if (globalResponse.ok) {
+        memory.global = await globalResponse.json();
+        console.log('📝 Fetched global memory');
+      }
+    }
+  } catch (error) {
+    console.warn('Could not fetch global memory:', error);
+  }
+
+  // Fetch project-specific memory if requested
+  if (includeProject) {
+    try {
+      // First get list of all projects
+      const projectsResponse = await fetch(
+        `https://claude.ai/api/organizations/${orgId}/projects`,
+        {
+          credentials: 'include',
+          headers: {
+            'Accept': 'application/json',
+          }
+        }
+      );
+
+      if (projectsResponse.ok) {
+        const projects = await projectsResponse.json();
+        console.log(`📝 Found ${projects.length} projects`);
+
+        // Fetch memory for each project
+        for (const project of projects) {
+          try {
+            const projectMemoryResponse = await fetch(
+              `https://claude.ai/api/organizations/${orgId}/projects/${project.uuid}/memories`,
+              {
+                credentials: 'include',
+                headers: {
+                  'Accept': 'application/json',
+                }
+              }
+            );
+
+            if (projectMemoryResponse.ok) {
+              const projectMemory = await projectMemoryResponse.json();
+              memory.projects.push({
+                name: project.name,
+                uuid: project.uuid,
+                memory: projectMemory
+              });
+              console.log(`📝 Fetched memory for project: ${project.name}`);
+            }
+          } catch (error) {
+            console.warn(`Could not fetch memory for project ${project.name}:`, error);
+          }
+        }
       }
     } catch (error) {
-      console.warn('Could not fetch project memory:', error);
+      console.warn('Could not fetch projects:', error);
     }
   }
 
@@ -737,7 +771,7 @@ async function fetchMemory(orgId, projectId = null) {
 
 // Format memory for markdown export
 function formatMemoryMarkdown(memory) {
-  if (!memory || (!memory.global && !memory.project)) {
+  if (!memory || (!memory.global && (!memory.projects || memory.projects.length === 0))) {
     return '';
   }
 
@@ -752,13 +786,18 @@ function formatMemoryMarkdown(memory) {
     markdown += '\n';
   }
 
-  // Project memory
-  if (memory.project && memory.project.length > 0) {
-    markdown += '### Project Memory\n\n';
-    memory.project.forEach((item, index) => {
-      markdown += `${index + 1}. ${item}\n`;
+  // Project memories
+  if (memory.projects && memory.projects.length > 0) {
+    markdown += '### Project Memories\n\n';
+    memory.projects.forEach(project => {
+      if (project.memory && project.memory.length > 0) {
+        markdown += `#### ${project.name}\n\n`;
+        project.memory.forEach((item, index) => {
+          markdown += `${index + 1}. ${item}\n`;
+        });
+        markdown += '\n';
+      }
     });
-    markdown += '\n';
   }
 
   return markdown;
@@ -766,7 +805,7 @@ function formatMemoryMarkdown(memory) {
 
 // Format memory for plain text export
 function formatMemoryText(memory) {
-  if (!memory || (!memory.global && !memory.project)) {
+  if (!memory || (!memory.global && (!memory.projects || memory.projects.length === 0))) {
     return '';
   }
 
@@ -781,13 +820,18 @@ function formatMemoryText(memory) {
     text += '\n';
   }
 
-  // Project memory
-  if (memory.project && memory.project.length > 0) {
-    text += 'Project Memory:\n';
-    memory.project.forEach((item, index) => {
-      text += `${index + 1}. ${item}\n`;
+  // Project memories
+  if (memory.projects && memory.projects.length > 0) {
+    text += 'Project Memories:\n\n';
+    memory.projects.forEach(project => {
+      if (project.memory && project.memory.length > 0) {
+        text += `${project.name}:\n`;
+        project.memory.forEach((item, index) => {
+          text += `  ${index + 1}. ${item}\n`;
+        });
+        text += '\n';
+      }
     });
-    text += '\n';
   }
 
   return text;

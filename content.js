@@ -427,7 +427,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       .then(memory => {
         console.log('Memory data fetched successfully:', memory);
 
-        if (!memory.global && !memory.project) {
+        if (!memory.global && (!memory.projects || memory.projects.length === 0)) {
           sendResponse({
             success: false,
             error: 'No memory data found'
