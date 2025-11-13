@@ -121,10 +121,16 @@
   - Need to better distinguish real artifacts from tool use results
   - Check for additional indicators beyond just `filename` field
 
-- **Pre-scan artifacts for browse view**
-  - Currently artifact indicators appear lazily after export
-  - Could add optional background scanning feature
-  - Would need rate limiting to avoid API throttling
+- **Proactive artifact scanning in conversation browser**
+  - Currently artifact indicators (📎 column) appear lazily after export
+  - Add user-triggered scan button to search all visible conversations for artifacts
+  - Would require fetching full conversation data for filtered results
+  - Considerations:
+    - Button-triggered (not automatic on launch) to keep extension lighter by default
+    - Add indicator column after Memory column, before Actions column (currently showing paperclip)
+    - Would need rate limiting/batching to avoid API throttling
+    - Display artifact count badge once scanned
+    - Could show progress during scan
 
 ## Current Version: 1.8.0
 
