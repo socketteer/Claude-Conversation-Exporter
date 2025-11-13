@@ -35,18 +35,18 @@ function inferModel(conversation) {
   // Fetch conversation data
   async function fetchConversation(orgId, conversationId) {
     const url = `https://claude.ai/api/organizations/${orgId}/chat_conversations/${conversationId}?tree=True&rendering_mode=messages&render_all_tools=true`;
-    
+
     const response = await fetch(url, {
       credentials: 'include',
       headers: {
         'Accept': 'application/json',
       }
     });
-    
+
     if (!response.ok) {
       throw new Error(`Failed to fetch conversation: ${response.status}`);
     }
-    
+
     return await response.json();
   }
   
@@ -67,137 +67,6 @@ function inferModel(conversation) {
     
     return await response.json();
   }
-  
-  // Helper function to reconstruct the current branch from the message tree
-function getCurrentBranch(data) {
-  if (!data.chat_messages || !data.current_leaf_message_uuid) {
-    return [];
-  }
-  
-  // Create a map of UUID to message for quick lookup
-  const messageMap = new Map();
-  data.chat_messages.forEach(msg => {
-    messageMap.set(msg.uuid, msg);
-  });
-  
-  // Trace back from the current leaf to the root
-  const branch = [];
-  let currentUuid = data.current_leaf_message_uuid;
-  
-  while (currentUuid && messageMap.has(currentUuid)) {
-    const message = messageMap.get(currentUuid);
-    branch.unshift(message); // Add to beginning to maintain order
-    currentUuid = message.parent_message_uuid;
-    
-    // Stop if we hit the root (parent UUID that doesn't exist in our messages)
-    if (!messageMap.has(currentUuid)) {
-      break;
-    }
-  }
-  
-  return branch;
-}
-
-// Convert to markdown format
-function convertToMarkdown(data, includeMetadata) {
-  let markdown = `# ${data.name || 'Untitled Conversation'}\n\n`;
-  
-  if (includeMetadata) {
-    markdown += `**Created:** ${new Date(data.created_at).toLocaleString()}\n`;
-    markdown += `**Updated:** ${new Date(data.updated_at).toLocaleString()}\n`;
-    markdown += `**Model:** ${data.model}\n\n`;
-    markdown += '---\n\n';
-  }
-  
-  // Get only the current branch messages
-  const branchMessages = getCurrentBranch(data);
-  
-  for (const message of branchMessages) {
-    const sender = message.sender === 'human' ? '**You**' : '**Claude**';
-    markdown += `${sender}:\n\n`;
-    
-    if (message.content) {
-      for (const content of message.content) {
-        if (content.text) {
-          markdown += `${content.text}\n\n`;
-        }
-      }
-    } else if (message.text) {
-      markdown += `${message.text}\n\n`;
-    }
-    
-    if (includeMetadata && message.created_at) {
-      markdown += `*${new Date(message.created_at).toLocaleString()}*\n\n`;
-    }
-    
-    markdown += '---\n\n';
-  }
-  
-  return markdown;
-}
-
-// Convert to plain text
-function convertToText(data, includeMetadata) {
-  let text = '';
-  
-  // Add metadata header if requested
-  if (includeMetadata) {
-    text += `${data.name || 'Untitled Conversation'}\n`;
-    text += `Created: ${new Date(data.created_at).toLocaleString()}\n`;
-    text += `Updated: ${new Date(data.updated_at).toLocaleString()}\n`;
-    text += `Model: ${data.model}\n\n`;
-    text += '---\n\n';
-  }
-  
-  // Get only the current branch messages
-  const branchMessages = getCurrentBranch(data);
-  
-  // Use simplified format
-  let humanSeen = false;
-  let assistantSeen = false;
-  
-  branchMessages.forEach((message) => {
-    // Get the message text
-    let messageText = '';
-    if (message.content) {
-      for (const content of message.content) {
-        if (content.text) {
-          messageText += content.text;
-        }
-      }
-    } else if (message.text) {
-      messageText = message.text;
-    }
-    
-    // Use full label on first occurrence, then abbreviate
-    let senderLabel;
-    if (message.sender === 'human') {
-      senderLabel = humanSeen ? 'H' : 'Human';
-      humanSeen = true;
-    } else {
-      senderLabel = assistantSeen ? 'A' : 'Assistant';
-      assistantSeen = true;
-    }
-    
-    text += `${senderLabel}: ${messageText}\n\n`;
-  });
-  
-  return text.trim();
-}
-
-// Download file utility
-function downloadFile(content, filename, type = 'application/json') {
-  const blob = new Blob([content], { type });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = filename;
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  URL.revokeObjectURL(url);
-}
-  
   // Handle messages from popup
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   if (request.action === 'exportConversation') {
@@ -210,28 +79,122 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         // Infer model if null
         data.model = inferModel(data);
         
-        let content, filename, type;
-        
-        switch (request.format) {
-          case 'markdown':
-            content = convertToMarkdown(data, request.includeMetadata);
-            filename = `claude-conversation-${data.name || request.conversationId}.md`;
-            type = 'text/markdown';
-            break;
-          case 'text':
-            content = convertToText(data, request.includeMetadata);
-            filename = `claude-conversation-${data.name || request.conversationId}.txt`;
-            type = 'text/plain';
-            break;
-          default:
-            content = JSON.stringify(data, null, 2);
-            filename = `claude-conversation-${data.name || request.conversationId}.json`;
-            type = 'application/json';
+        // Check if we need to extract artifacts to separate files
+        if (request.extractArtifacts || request.flattenArtifacts) {
+          // Extract artifacts
+          const artifactFiles = extractArtifactFiles(data, request.artifactFormat || 'original');
+
+          if (artifactFiles.length > 0) {
+            // Create a ZIP with artifacts (and optionally conversation)
+            const zip = new JSZip();
+
+            // Add conversation file only if includeChats is true
+            if (request.includeChats !== false) {
+              let conversationContent, conversationFilename;
+              switch (request.format) {
+                case 'markdown':
+                  conversationContent = convertToMarkdown(data, request.includeMetadata, request.conversationId, request.includeArtifacts, request.includeThinking);
+                  conversationFilename = `${data.name || request.conversationId}.md`;
+                  break;
+                case 'text':
+                  conversationContent = convertToText(data, request.includeMetadata, request.includeArtifacts, request.includeThinking);
+                  conversationFilename = `${data.name || request.conversationId}.txt`;
+                  break;
+                default:
+                  conversationContent = JSON.stringify(data, null, 2);
+                  conversationFilename = `${data.name || request.conversationId}.json`;
+              }
+
+              zip.file(conversationFilename, conversationContent);
+            }
+
+            // Add artifact files - nested and/or flat
+            // Nested: create artifacts subfolder
+            if (request.extractArtifacts) {
+              const artifactsFolder = request.includeChats !== false ? zip.folder('artifacts') : zip;
+              for (const artifact of artifactFiles) {
+                artifactsFolder.file(artifact.filename, artifact.content);
+              }
+            }
+
+            // Flat: add artifacts with conversation name prefix in same folder
+            if (request.flattenArtifacts) {
+              for (const artifact of artifactFiles) {
+                const filename = `${data.name || request.conversationId}_${artifact.filename}`;
+                zip.file(filename, artifact.content);
+              }
+            }
+
+            // Generate and download ZIP
+            zip.generateAsync({ type: 'blob' }).then(blob => {
+              const url = URL.createObjectURL(blob);
+              const a = document.createElement('a');
+              a.href = url;
+              a.download = `${data.name || request.conversationId}.zip`;
+              document.body.appendChild(a);
+              a.click();
+              document.body.removeChild(a);
+              URL.revokeObjectURL(url);
+            });
+
+            console.log(`Downloading ZIP with conversation and ${artifactFiles.length} artifact(s)`);
+            sendResponse({ success: true });
+          } else {
+            // No artifacts found, just export conversation normally
+            let content, filename, type;
+            switch (request.format) {
+              case 'markdown':
+                content = convertToMarkdown(data, request.includeMetadata, request.conversationId, request.includeArtifacts, request.includeThinking);
+                filename = `${data.name || request.conversationId}.md`;
+                type = 'text/markdown';
+                break;
+              case 'text':
+                content = convertToText(data, request.includeMetadata, request.includeArtifacts, request.includeThinking);
+                filename = `${data.name || request.conversationId}.txt`;
+                type = 'text/plain';
+                break;
+              default:
+                content = JSON.stringify(data, null, 2);
+                filename = `${data.name || request.conversationId}.json`;
+                type = 'application/json';
+            }
+            console.log('No artifacts found. Downloading file:', filename);
+            downloadFile(content, filename, type);
+            sendResponse({ success: true });
+          }
+        } else {
+          // Normal export without artifact extraction
+          if (request.includeChats === false) {
+            // If chats are disabled and we're not extracting artifacts, there's nothing to export
+            console.log('No content to export (chats disabled, artifacts not extracted)');
+            sendResponse({
+              success: false,
+              error: 'Nothing to export. Enable "Include conversation text" or "Artifacts nested".'
+            });
+          } else {
+            let content, filename, type;
+            switch (request.format) {
+              case 'markdown':
+                content = convertToMarkdown(data, request.includeMetadata, request.conversationId, request.includeArtifacts, request.includeThinking);
+                filename = `${data.name || request.conversationId}.md`;
+                type = 'text/markdown';
+                break;
+              case 'text':
+                content = convertToText(data, request.includeMetadata, request.includeArtifacts, request.includeThinking);
+                filename = `${data.name || request.conversationId}.txt`;
+                type = 'text/plain';
+                break;
+              default:
+                content = JSON.stringify(data, null, 2);
+                filename = `${data.name || request.conversationId}.json`;
+                type = 'application/json';
+            }
+
+            console.log('Downloading file:', filename);
+            downloadFile(content, filename, type);
+            sendResponse({ success: true });
+          }
         }
-        
-        console.log('Downloading file:', filename);
-        downloadFile(content, filename, type);
-        sendResponse({ success: true });
       })
       .catch(error => {
         console.error('Export conversation error:', error);
@@ -252,40 +215,98 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       .then(async conversations => {
         console.log(`Fetched ${conversations.length} conversations`);
         
-        if (request.format === 'json') {
-          // For JSON, export as a single file with all conversations
-          const filename = `claude-all-conversations-${new Date().toISOString().split('T')[0]}.json`;
+        if (request.format === 'json' && !request.extractArtifacts) {
+          // For JSON without artifact extraction, export as a single file
+          // Format: claude-exports-2025-10-31_14-30-45.json
+          const now = new Date();
+          const datetime = now.toISOString().replace(/[:.]/g, '-').slice(0, 19).replace('T', '_');
+          const filename = `claude-exports-${datetime}.json`;
           console.log('Downloading all conversations as JSON:', filename);
           downloadFile(JSON.stringify(conversations, null, 2), filename);
           sendResponse({ success: true, count: conversations.length });
-        } else {
-          // For other formats, create individual files
-          let count = 0;
+        } else if (request.extractArtifacts || request.flattenArtifacts) {
+          // When extracting artifacts (nested or flat), always create a ZIP
+          const zip = new JSZip();
+          let processed = 0;
+          let included = 0;
           let errors = [];
-          
+
           for (const conv of conversations) {
             try {
-              console.log(`Fetching full conversation ${count + 1}/${conversations.length}: ${conv.uuid}`);
+              processed++;
+              console.log(`Scanning conversation ${processed}/${conversations.length}: ${conv.name || conv.uuid}`);
               const fullConv = await fetchConversation(request.orgId, conv.uuid);
-              
+
               // Infer model if null
               fullConv.model = inferModel(fullConv);
-              
-              let content, filename, type;
-              
-              if (request.format === 'markdown') {
-                content = convertToMarkdown(fullConv, request.includeMetadata);
-                filename = `claude-${conv.name || conv.uuid}.md`;
-                type = 'text/markdown';
-              } else {
-                content = convertToText(fullConv, request.includeMetadata);
-                filename = `claude-${conv.name || conv.uuid}.txt`;
-                type = 'text/plain';
+
+              // Extract artifacts first to check if this conversation should be included
+              const artifactFiles = extractArtifactFiles(fullConv, request.artifactFormat || 'original');
+
+              // If chats are disabled and no artifacts, skip this conversation
+              if (request.includeChats === false && artifactFiles.length === 0) {
+                console.log(`  Skipping - no artifacts found (${processed}/${conversations.length} scanned, ${included} included)`);
+                // Add a small delay to avoid overwhelming the API
+                await new Promise(resolve => setTimeout(resolve, 500));
+                continue;
               }
-              
-              downloadFile(content, filename, type);
-              count++;
-              
+
+              // Sanitize folder name
+              const folderName = (conv.name || conv.uuid).replace(/[<>:"/\\|?*]/g, '_');
+
+              // Special case: ONLY flat artifacts (no chats, no nested) - dump all in root
+              if (request.flattenArtifacts && !request.extractArtifacts && request.includeChats === false) {
+                // Add artifacts directly to ZIP root with conversation name prefix
+                if (artifactFiles.length > 0) {
+                  for (const artifact of artifactFiles) {
+                    const artifactFilename = `${folderName}_${artifact.filename}`;
+                    zip.file(artifactFilename, artifact.content);
+                  }
+                }
+              } else {
+                // Create conversation folder for structured export
+                const convFolder = zip.folder(folderName);
+
+                // Add conversation file only if includeChats is true
+                if (request.includeChats !== false) {
+                  let conversationContent, conversationFilename;
+                  if (request.format === 'markdown') {
+                    conversationContent = convertToMarkdown(fullConv, request.includeMetadata, conv.uuid, request.includeArtifacts, request.includeThinking);
+                    conversationFilename = `${folderName}.md`;
+                  } else if (request.format === 'text') {
+                    conversationContent = convertToText(fullConv, request.includeMetadata, request.includeArtifacts, request.includeThinking);
+                    conversationFilename = `${folderName}.txt`;
+                  } else {
+                    conversationContent = JSON.stringify(fullConv, null, 2);
+                    conversationFilename = `${folderName}.json`;
+                  }
+
+                  convFolder.file(conversationFilename, conversationContent);
+                }
+
+                // Add artifact files - nested and/or flat
+                if (artifactFiles.length > 0) {
+                  // Nested: create artifacts subfolder
+                  if (request.extractArtifacts) {
+                    const artifactsFolder = request.includeChats !== false ? convFolder.folder('artifacts') : convFolder;
+                    for (const artifact of artifactFiles) {
+                      artifactsFolder.file(artifact.filename, artifact.content);
+                    }
+                  }
+
+                  // Flat: add artifacts with conversation name prefix in same folder
+                  if (request.flattenArtifacts) {
+                    for (const artifact of artifactFiles) {
+                      const artifactFilename = `${folderName}_${artifact.filename}`;
+                      convFolder.file(artifactFilename, artifact.content);
+                    }
+                  }
+                }
+              }
+
+              included++;
+              console.log(`  Added to export (${processed}/${conversations.length} scanned, ${included} included)`);
+
               // Add a small delay to avoid overwhelming the API
               await new Promise(resolve => setTimeout(resolve, 500));
             } catch (error) {
@@ -293,13 +314,76 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
               errors.push(`${conv.name || conv.uuid}: ${error.message}`);
             }
           }
-          
+
+          // Generate and download ZIP
+          zip.generateAsync({ type: 'blob' }).then(blob => {
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            // Format: claude-artifacts-2025-10-31_14-30-45.zip or claude-exports-2025-10-31_14-30-45.zip
+            const now = new Date();
+            const datetime = now.toISOString().replace(/[:.]/g, '-').slice(0, 19).replace('T', '_');
+            // Use 'claude-artifacts' when ONLY flat artifacts are exported
+            const prefix = (request.flattenArtifacts && !request.extractArtifacts && request.includeChats === false) ? 'claude-artifacts' : 'claude-exports';
+            a.download = `${prefix}-${datetime}.zip`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+          });
+
           if (errors.length > 0) {
             console.warn('Some conversations failed to export:', errors);
-            sendResponse({ 
-              success: true, 
-              count, 
-              warnings: `Exported ${count}/${conversations.length} conversations. Some failed: ${errors.join('; ')}` 
+            sendResponse({
+              success: true,
+              count: included,
+              warnings: `Exported ${included}/${conversations.length} conversations. Some failed: ${errors.join('; ')}`
+            });
+          } else {
+            sendResponse({ success: true, count: included });
+          }
+        } else {
+          // For other formats without artifact extraction, create individual files
+          let count = 0;
+          let errors = [];
+
+          for (const conv of conversations) {
+            try {
+              console.log(`Fetching full conversation ${count + 1}/${conversations.length}: ${conv.uuid}`);
+              const fullConv = await fetchConversation(request.orgId, conv.uuid);
+
+              // Infer model if null
+              fullConv.model = inferModel(fullConv);
+
+              let content, filename, type;
+
+              if (request.format === 'markdown') {
+                content = convertToMarkdown(fullConv, request.includeMetadata, conv.uuid, request.includeArtifacts, request.includeThinking);
+                filename = `${conv.name || conv.uuid}.md`;
+                type = 'text/markdown';
+              } else {
+                content = convertToText(fullConv, request.includeMetadata, request.includeArtifacts, request.includeThinking);
+                filename = `${conv.name || conv.uuid}.txt`;
+                type = 'text/plain';
+              }
+
+              downloadFile(content, filename, type);
+              count++;
+
+              // Add a small delay to avoid overwhelming the API
+              await new Promise(resolve => setTimeout(resolve, 500));
+            } catch (error) {
+              console.error(`Failed to export conversation ${conv.uuid}:`, error);
+              errors.push(`${conv.name || conv.uuid}: ${error.message}`);
+            }
+          }
+
+          if (errors.length > 0) {
+            console.warn('Some conversations failed to export:', errors);
+            sendResponse({
+              success: true,
+              count,
+              warnings: `Exported ${count}/${conversations.length} conversations. Some failed: ${errors.join('; ')}`
             });
           } else {
             sendResponse({ success: true, count });
@@ -308,13 +392,63 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       })
       .catch(error => {
         console.error('Export all conversations error:', error);
-        sendResponse({ 
-          success: false, 
+        sendResponse({
+          success: false,
           error: error.message,
-          details: error.stack 
+          details: error.stack
         });
       });
-    
+
+    return true;
+  } else if (request.action === 'exportMemory') {
+    console.log('Export memory request received:', request);
+
+    fetchMemory(request.orgId, request.includeGlobal, request.includeProject)
+      .then(memory => {
+        console.log('Memory data fetched successfully:', memory);
+
+        if (!memory.global && !memory.project) {
+          sendResponse({
+            success: false,
+            error: 'No memory data found'
+          });
+          return;
+        }
+
+        let content, filename, type;
+        const now = new Date();
+        const datetime = now.toISOString().replace(/[:.]/g, '-').slice(0, 19).replace('T', '_');
+
+        switch (request.format) {
+          case 'markdown':
+            content = formatMemoryMarkdown(memory);
+            filename = `claude-memory-${datetime}.md`;
+            type = 'text/markdown';
+            break;
+          case 'text':
+            content = formatMemoryText(memory);
+            filename = `claude-memory-${datetime}.txt`;
+            type = 'text/plain';
+            break;
+          default:
+            content = JSON.stringify(memory, null, 2);
+            filename = `claude-memory-${datetime}.json`;
+            type = 'application/json';
+        }
+
+        console.log('Downloading memory file:', filename);
+        downloadFile(content, filename, type);
+        sendResponse({ success: true });
+      })
+      .catch(error => {
+        console.error('Memory export error:', error);
+        sendResponse({
+          success: false,
+          error: error.message,
+          details: error.stack
+        });
+      });
+
     return true;
   }
   });

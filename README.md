@@ -1,6 +1,6 @@
-# Claude Conversation Exporter
+# Claude Exporter
 
-A Chrome extension that allows you to export your Claude.ai conversations in various formats (JSON, Markdown, Plain Text) with support for bulk exports and conversation browsing.
+A Chrome extension that allows you to export your Claude.ai conversations and artifacts in various formats with support for bulk exports, artifact extraction, and conversation browsing.
 
 ## Features
 
@@ -9,7 +9,9 @@ A Chrome extension that allows you to export your Claude.ai conversations in var
 - 🔍 **Browse & Search** - View all your conversations in a searchable table
 - 🌳 **Branch-Aware Export** - Correctly handles conversation branches (exports only the current branch)
 - 📝 **Multiple Formats** - JSON (full data), Markdown, or Plain Text
-- 🗂️ **ZIP Archives** - Bulk exports create organized ZIP files with all conversations
+- 📦 **Artifact Export** - Extract artifacts (code, documents, etc.) as separate files
+- 🎯 **Flexible Export Options** - Choose to include conversations, artifacts inline, or artifacts as separate files
+- 🗂️ **ZIP Archives** - Bulk exports create organized ZIP files with conversations and artifacts
 - 🏷️ **Metadata Options** - Include or exclude timestamps, models, and other metadata
 - 🤖 **Complete Model Information** - Preserves and displays model information for all conversations (unlike official Claude.ai exports)
 - 🔮 **Smart Model Inference** - Automatically infers the correct model for conversations that used the default model at the time
@@ -237,7 +239,7 @@ Feel free to submit issues or pull requests if you find bugs or have suggestions
 
 ## Acknowledgments
 
-- **Code Development**: Written by Claude Opus 4.1 in collaboration with a human developer
+- **Code Development**: Written by Claude Sonnet 4.5 in collaboration with a human developer
 - **ZIP Library**: Uses [JSZip](https://stuk.github.io/jszip/) for creating ZIP archives
 - **Motivation**: Inspired by the need for better Claude.ai conversation management and the limitations of official exports
 
