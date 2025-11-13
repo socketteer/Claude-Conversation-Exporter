@@ -6,12 +6,15 @@ A Chrome extension that allows you to export your Claude.ai conversations and ar
 
 - 📥 **Export Individual Conversations** - Export any conversation directly from Claude.ai
 - 📚 **Bulk Export** - Export all or filtered conversations as a ZIP file
-- 🔍 **Browse & Search** - View all your conversations in a searchable table
+- 🔍 **Browse & Search** - View all your conversations in a searchable table with artifact indicators
 - 🌳 **Branch-Aware Export** - Correctly handles conversation branches (exports only the current branch)
-- 📝 **Multiple Formats** - JSON (full data), Markdown, or Plain Text
+- 📝 **Multiple Formats** - JSON (full data), Markdown, Plain Text, or CSV
+- 💭 **Extended Thinking Export** - Optionally include extended thinking blocks in exports
 - 📦 **Artifact Export** - Extract artifacts (code, documents, etc.) as separate files
-- 🎯 **Flexible Export Options** - Choose to include conversations, artifacts inline, or artifacts as separate files
-- 🗂️ **ZIP Archives** - Bulk exports create organized ZIP files with conversations and artifacts
+- 🎯 **Flexible Export Options** - Choose inline, nested, or flat artifact organization
+- 🗂️ **Smart File Organization** - Flat exports use top-level Chats/ and Artifacts/ folders
+- 🧠 **Memory Export** - Export global and project-specific memories (standalone feature)
+- 📎 **Artifact Indicators** - See which conversations contain artifacts in the browse view
 - 🏷️ **Metadata Options** - Include or exclude timestamps, models, and other metadata
 - 🤖 **Complete Model Information** - Preserves and displays model information for all conversations (unlike official Claude.ai exports)
 - 🔮 **Smart Model Inference** - Automatically infers the correct model for conversations that used the default model at the time
@@ -136,13 +139,37 @@ This extension provides several advantages over the official Claude.ai data expo
 - Human-readable format with formatting
 - Shows only the current conversation branch
 - Includes optional metadata (timestamps, model info)
+- Optional extended thinking blocks
 - Great for documentation or sharing
 
 ### Plain Text
 - Simple format following Claude's prompt style
 - Uses "Human:" and "Assistant:" prefixes (abbreviated to H:/A: after first occurrence)
 - Shows only the current conversation branch
+- Optional extended thinking blocks
 - Ideal for copying into other LLMs or text editors
+
+### CSV
+- Structured data format with columns: Timestamp, Speaker, Type, Content
+- Includes separate rows for messages, thinking blocks, and artifacts
+- Proper CSV escaping for special characters
+- Perfect for data analysis and spreadsheet applications
+
+## Export Options
+
+### Extended Thinking
+Toggle to include or exclude extended thinking blocks in your exports (unchecked by default)
+
+### Artifact Modes
+- **Inline**: Artifacts embedded directly in the conversation text
+- **Nested**: Each conversation in its own folder with artifacts/ subfolder
+- **Flat**: Top-level Chats/ and Artifacts/ folders for easy navigation
+
+### Memory Export
+Standalone feature to export organizational and project-specific memories:
+- Global memory (organizational level)
+- Project-specific memories (all projects)
+- Export as JSON, Markdown, or Plain Text
 
 ## File Structure
 
