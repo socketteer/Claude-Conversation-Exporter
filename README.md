@@ -192,37 +192,6 @@ claude-exporter/
 └── icon128.png           # Extension icon (128x128)
 ```
 
-## Chrome Web Store Submission
-
-To prepare for Chrome Web Store submission:
-
-### 1. Create a ZIP for Submission
-```bash
-cd claude-export
-zip -r claude-exporter.zip claude-exporter/ -x "*.DS_Store" -x "*/.git/*"
-```
-
-### 2. Prepare Store Listing Assets
-You'll need:
-- **Screenshots** (1280x800 or 640x400): Take screenshots of the extension in action
-- **Promotional Images**: Small tile (440x280), Large tile (920x680) - optional
-- **Description**: Use the features list from this README
-- **Category**: Suggested: "Productivity" or "Developer Tools"
-
-### 3. Privacy Policy
-Since the extension accesses Claude.ai data, you should mention:
-- The extension only accesses data when explicitly triggered by the user
-- No data is sent to external servers
-- All processing happens locally in the browser
-- User's Claude.ai authentication is used only for API access
-
-### 4. Permissions Justification
-Be ready to explain why each permission is needed:
-- `activeTab`: To interact with the current Claude.ai tab
-- `storage`: To save user's organization ID
-- `scripting`: To inject content scripts for export functionality
-- Host permission for `claude.ai`: To access Claude.ai API endpoints
-
 ## Troubleshooting
 
 ### "Organization ID not configured"
