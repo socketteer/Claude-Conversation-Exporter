@@ -161,6 +161,28 @@ async function loadProjects() {
   }
 }
 
+// Populate project memory dropdown
+function populateProjectMemoryDropdown(projects) {
+  const dropdown = document.getElementById('projectMemorySelect');
+  if (!dropdown) return;
+
+  // Keep None and All options, add projects after
+  dropdown.innerHTML = '<option value="none">None</option><option value="all">All</option>';
+
+  if (!projects || projects.length === 0) {
+    return;
+  }
+
+  projects.forEach(project => {
+    const option = document.createElement('option');
+    option.value = project.uuid || project.id;
+    option.textContent = project.name || project.title || 'Untitled Project';
+    dropdown.appendChild(option);
+  });
+
+  console.log(`Populated ${projects.length} projects in memory dropdown`);
+}
+
 // Load all conversations
 async function loadConversations() {
   if (!orgId) return;
@@ -168,6 +190,7 @@ async function loadConversations() {
   try {
     // Load projects first
     const projects = await loadProjects();
+    populateProjectMemoryDropdown(projects);
 
     const response = await fetch(`https://claude.ai/api/organizations/${orgId}/chat_conversations`, {
       credentials: 'include',
@@ -894,6 +917,62 @@ async function exportAllFiltered() {
       return;
     }
 
+    // Export memory if selected
+    const includeGlobalMemory = document.getElementById('includeGlobalMemory').checked;
+    const projectMemorySelect = document.getElementById('projectMemorySelect').value;
+
+    if (includeGlobalMemory || projectMemorySelect !== 'none') {
+      progressText.textContent = 'Fetching memory...';
+
+      try {
+        // Determine which project memory to fetch
+        let projectId = null;
+        if (projectMemorySelect !== 'none' && projectMemorySelect !== 'all') {
+          projectId = projectMemorySelect; // Specific project UUID
+        }
+
+        const includeProject = (projectMemorySelect === 'all' || projectId !== null);
+        const memory = await fetchMemory(orgId, includeGlobalMemory, includeProject);
+
+        // Create Memory folder and add memory files
+        if (memory.global || (memory.projects && memory.projects.length > 0)) {
+          const memoryFolder = zip.folder('Memory');
+          const now = new Date();
+          const datetime = now.toISOString().replace(/[:.]/g, '-').slice(0, 19).replace('T', '_');
+
+          // Add global memory if present
+          if (memory.global) {
+            const globalContent = format === 'json'
+              ? JSON.stringify(memory.global, null, 2)
+              : format === 'markdown'
+              ? formatMemoryMarkdown({ global: memory.global, projects: [] })
+              : formatMemoryText({ global: memory.global, projects: [] });
+            const ext = format === 'json' ? 'json' : format === 'markdown' ? 'md' : 'txt';
+            memoryFolder.file(`global-memory-${datetime}.${ext}`, globalContent);
+          }
+
+          // Add project memories if present
+          if (memory.projects && memory.projects.length > 0) {
+            memory.projects.forEach(project => {
+              if (project.memory && project.memory.length > 0) {
+                const projectSafeName = (project.name || project.uuid).replace(/[<>:"/\\|?*]/g, '_');
+                const projectContent = format === 'json'
+                  ? JSON.stringify(project.memory, null, 2)
+                  : format === 'markdown'
+                  ? formatMemoryMarkdown({ global: null, projects: [project] })
+                  : formatMemoryText({ global: null, projects: [project] });
+                const ext = format === 'json' ? 'json' : format === 'markdown' ? 'md' : 'txt';
+                memoryFolder.file(`${projectSafeName}-memory-${datetime}.${ext}`, projectContent);
+              }
+            });
+          }
+        }
+      } catch (error) {
+        console.error('Memory export error:', error);
+        // Continue with export even if memory fails
+      }
+    }
+
     // Generate and download the ZIP file
     progressText.textContent = 'Creating ZIP file...';
     const blob = await zip.generateAsync({
@@ -934,65 +1013,6 @@ async function exportAllFiltered() {
   } catch (error) {
     console.error('Export error:', error);
     progressModal.style.display = 'none';
-    showToast(`Export failed: ${error.message}`, true);
-  } finally {
-    button.disabled = false;
-    button.textContent = originalButtonText;
-  }
-}
-
-// Export memory
-async function exportMemory() {
-  const format = document.getElementById('memoryFormat').value;
-  const includeGlobal = document.getElementById('includeGlobalMemory').checked;
-  const includeProject = document.getElementById('includeProjectMemory').checked;
-
-  if (!includeGlobal && !includeProject) {
-    showToast('Please select at least one memory type to export (Global or Project)', true);
-    return;
-  }
-
-  const button = document.getElementById('exportMemoryBtn');
-  button.disabled = true;
-  const originalButtonText = button.textContent;
-  button.textContent = 'Fetching...';
-
-  try {
-    const memory = await fetchMemory(orgId, includeGlobal, includeProject);
-
-    if (!memory.global && (!memory.projects || memory.projects.length === 0)) {
-      showToast('No memory data found', true);
-      button.disabled = false;
-      button.textContent = originalButtonText;
-      return;
-    }
-
-    // Generate filename and content based on format
-    let content, filename;
-    const now = new Date();
-    const datetime = now.toISOString().replace(/[:.]/g, '-').slice(0, 19).replace('T', '_');
-
-    switch (format) {
-      case 'markdown':
-        content = formatMemoryMarkdown(memory);
-        filename = `claude-memory-${datetime}.md`;
-        break;
-      case 'text':
-        content = formatMemoryText(memory);
-        filename = `claude-memory-${datetime}.txt`;
-        break;
-      case 'json':
-        content = JSON.stringify(memory, null, 2);
-        filename = `claude-memory-${datetime}.json`;
-        break;
-    }
-
-    // Download the file
-    downloadFile(content, filename);
-    showToast('Memory exported successfully!');
-
-  } catch (error) {
-    console.error('Memory export error:', error);
     showToast(`Export failed: ${error.message}`, true);
   } finally {
     button.disabled = false;
@@ -1072,7 +1092,4 @@ function setupEventListeners() {
 
   // Export all button
   document.getElementById('exportAllBtn').addEventListener('click', exportAllFiltered);
-
-  // Export Memory button
-  document.getElementById('exportMemoryBtn').addEventListener('click', exportMemory);
 }

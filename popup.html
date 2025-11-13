@@ -191,39 +191,30 @@
         Flat Artifacts
       </label>
     </div>
+
+    <!-- Memory Export Options -->
+    <div class="export-row" style="margin-top: 10px;">
+      <label style="font-weight: 500;">
+        Memory:
+      </label>
+
+      <label title="Include global organizational memory">
+        <input type="checkbox" id="includeGlobalMemory">
+        Global
+      </label>
+
+      <label title="Include project-specific memories">
+        Project:
+        <select id="projectMemorySelect" style="width: auto; display: inline-block; margin-left: 5px;">
+          <option value="none">None</option>
+          <option value="all">All</option>
+        </select>
+      </label>
+    </div>
   </div>
 
   <button id="exportCurrent">Export Current Conversation</button>
   <button id="exportAll">Export All Conversations</button>
-
-  <div style="margin-top: 15px; padding-top: 15px; border-top: 1px solid var(--border-color);">
-    <h3 style="font-size: 14px; margin-bottom: 10px; color: var(--text-color);">Memory Export</h3>
-
-    <div class="options">
-      <div class="export-row">
-        <label>
-          Format:
-          <select id="memoryFormat">
-            <option value="json">JSON</option>
-            <option value="markdown">Markdown</option>
-            <option value="text">Plain Text</option>
-          </select>
-        </label>
-
-        <label title="Include global organizational memory">
-          <input type="checkbox" id="includeGlobalMemory" checked>
-          Global
-        </label>
-
-        <label title="Include project-specific memory">
-          <input type="checkbox" id="includeProjectMemory" checked>
-          Project
-        </label>
-      </div>
-    </div>
-
-    <button id="exportMemory">Export Memory</button>
-  </div>
 
   <button id="browseConversations">Browse All Conversations</button>
   

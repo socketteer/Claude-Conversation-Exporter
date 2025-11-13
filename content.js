@@ -420,55 +420,5 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       });
 
     return true;
-  } else if (request.action === 'exportMemory') {
-    console.log('Export memory request received:', request);
-
-    fetchMemory(request.orgId, request.includeGlobal, request.includeProject)
-      .then(memory => {
-        console.log('Memory data fetched successfully:', memory);
-
-        if (!memory.global && (!memory.projects || memory.projects.length === 0)) {
-          sendResponse({
-            success: false,
-            error: 'No memory data found'
-          });
-          return;
-        }
-
-        let content, filename, type;
-        const now = new Date();
-        const datetime = now.toISOString().replace(/[:.]/g, '-').slice(0, 19).replace('T', '_');
-
-        switch (request.format) {
-          case 'markdown':
-            content = formatMemoryMarkdown(memory);
-            filename = `claude-memory-${datetime}.md`;
-            type = 'text/markdown';
-            break;
-          case 'text':
-            content = formatMemoryText(memory);
-            filename = `claude-memory-${datetime}.txt`;
-            type = 'text/plain';
-            break;
-          default:
-            content = JSON.stringify(memory, null, 2);
-            filename = `claude-memory-${datetime}.json`;
-            type = 'application/json';
-        }
-
-        console.log('Downloading memory file:', filename);
-        downloadFile(content, filename, type);
-        sendResponse({ success: true });
-      })
-      .catch(error => {
-        console.error('Memory export error:', error);
-        sendResponse({
-          success: false,
-          error: error.message,
-          details: error.stack
-        });
-      });
-
-    return true;
   }
   });

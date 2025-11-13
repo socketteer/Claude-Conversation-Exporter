@@ -630,42 +630,32 @@
                 Flat
               </label>
             </div>
-          </div>
-        </div>
 
-        <button class="export-all-btn" id="exportAllBtn" disabled>
-          Export All
-        </button>
-      </div>
+            <div class="section-divider"></div>
 
-      <div class="export-controls-wrapper" style="margin-top: 15px; padding-top: 15px; border-top: 1px solid var(--border-color);">
-        <div class="export-settings">
-          <div class="export-row">
-            <div class="export-section">
+            <div class="export-section memory-section">
               <label>
-                Memory format:
-                <select id="memoryFormat">
-                  <option value="json">JSON</option>
-                  <option value="markdown">Markdown</option>
-                  <option value="text">Plain Text</option>
-                </select>
+                Memory:
               </label>
 
               <label title="Include global organizational memory">
-                <input type="checkbox" id="includeGlobalMemory" checked>
+                <input type="checkbox" id="includeGlobalMemory">
                 Global
               </label>
 
-              <label title="Include project-specific memory for all projects">
-                <input type="checkbox" id="includeProjectMemory" checked>
-                Project
+              <label title="Include project-specific memories">
+                Project:
+                <select id="projectMemorySelect">
+                  <option value="none">None</option>
+                  <option value="all">All</option>
+                </select>
               </label>
             </div>
           </div>
         </div>
 
-        <button class="export-all-btn" id="exportMemoryBtn">
-          Export Memory
+        <button class="export-all-btn" id="exportAllBtn" disabled>
+          Export All
         </button>
       </div>
     </div>
