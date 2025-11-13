@@ -329,7 +329,6 @@
     }
 
     .sort-indicator {
-      margin-left: 5px;
       color: var(--primary-color);
       font-size: 14px;
       font-weight: normal;
@@ -343,6 +342,15 @@
     th.sortable {
       cursor: pointer;
       user-select: none;
+      position: relative;
+      padding-right: 35px; /* Reserve space for sort indicator */
+    }
+
+    th.sortable .sort-indicator {
+      position: absolute;
+      right: 10px;
+      top: 50%;
+      transform: translateY(-50%);
     }
 
     tbody tr {
@@ -362,7 +370,7 @@
     .conversation-name {
       font-weight: 500;
       color: var(--text-primary);
-      max-width: 400px;
+      max-width: 300px;
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
