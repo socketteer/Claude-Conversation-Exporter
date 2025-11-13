@@ -304,6 +304,13 @@ function sortConversations() {
           aVal = formatModelName(a.model || '').toLowerCase();
           bVal = formatModelName(b.model || '').toLowerCase();
           break;
+        case 'artifacts':
+          aVal = conversationArtifacts.get(a.uuid);
+          bVal = conversationArtifacts.get(b.uuid);
+          // Treat undefined as -1 so unscanned conversations sort to bottom/top consistently
+          aVal = aVal !== undefined ? aVal : -1;
+          bVal = bVal !== undefined ? bVal : -1;
+          break;
         default:
           continue;
       }
@@ -371,7 +378,7 @@ function displayConversations() {
           <th class="sortable" data-sort="updated">Last Updated${getSortIndicator('updated')}</th>
           <th class="sortable" data-sort="created">Created${getSortIndicator('created')}</th>
           <th class="sortable" data-sort="model">Model${getSortIndicator('model')}</th>
-          <th class="artifacts-col" title="Contains artifacts">📎</th>
+          <th class="sortable artifacts-col" data-sort="artifacts">Artifacts${getSortIndicator('artifacts')}</th>
           <th>Actions</th>
           <th class="checkbox-col">
             <input type="checkbox" id="selectAll" class="select-all-checkbox" ${selectedConversations.size > 0 ? 'checked' : ''}>
@@ -387,7 +394,9 @@ function displayConversations() {
     const modelBadgeClass = getModelBadgeClass(conv.model);
     const projectName = getProjectName(conv);
     const artifactCount = conversationArtifacts.get(conv.uuid);
-    const artifactIndicator = artifactCount ? `<span class="artifact-badge" title="${artifactCount} artifact(s)">📎 ${artifactCount}</span>` : '';
+    const artifactIndicator = artifactCount !== undefined
+      ? (artifactCount > 0 ? artifactCount : '-')
+      : '';
 
     html += `
       <tr data-id="${conv.uuid}">
@@ -1035,10 +1044,83 @@ function showToast(message, isError = false) {
   toast.textContent = message;
   toast.style.background = isError ? '#d32f2f' : '#333';
   toast.classList.add('show');
-  
+
   setTimeout(() => {
     toast.classList.remove('show');
   }, 3000);
+}
+
+// Scan all filtered conversations for artifacts
+async function scanArtifacts() {
+  const button = document.getElementById('scanArtifactsBtn');
+  button.disabled = true;
+
+  const conversationsToScan = filteredConversations;
+  const total = conversationsToScan.length;
+  let scanned = 0;
+  let totalArtifacts = 0;
+
+  try {
+    // Process conversations in batches to avoid overwhelming the API
+    const batchSize = 3;
+    for (let i = 0; i < total; i += batchSize) {
+      const batch = conversationsToScan.slice(i, Math.min(i + batchSize, total));
+      const promises = batch.map(async (conv) => {
+        try {
+          const response = await fetch(
+            `https://claude.ai/api/organizations/${orgId}/chat_conversations/${conv.uuid}?tree=True&rendering_mode=messages&render_all_tools=true`,
+            {
+              credentials: 'include',
+              headers: {
+                'Accept': 'application/json',
+              }
+            }
+          );
+
+          if (!response.ok) {
+            console.warn(`Failed to fetch conversation ${conv.uuid}: ${response.status}`);
+            conversationArtifacts.set(conv.uuid, 0);
+            return;
+          }
+
+          const data = await response.json();
+          const artifactFiles = extractArtifactFiles(data, 'original');
+          const count = artifactFiles.length;
+          conversationArtifacts.set(conv.uuid, count);
+          if (count > 0) {
+            totalArtifacts += count;
+          }
+        } catch (error) {
+          console.error(`Error scanning ${conv.name}:`, error);
+          conversationArtifacts.set(conv.uuid, 0);
+        }
+      });
+
+      await Promise.all(promises);
+      scanned += batch.length;
+
+      // Update button text with progress
+      button.textContent = `Scanned ${scanned}/${total}`;
+
+      // Small delay between batches
+      if (i + batchSize < total) {
+        await new Promise(resolve => setTimeout(resolve, 200));
+      }
+    }
+
+    // Update button text with final count
+    button.textContent = `${totalArtifacts} Artifacts found`;
+
+    // Refresh table to show artifact counts
+    displayConversations();
+
+  } catch (error) {
+    console.error('Scan error:', error);
+    showToast(`Scan failed: ${error.message}`, true);
+    button.textContent = 'Search Artifacts';
+  } finally {
+    button.disabled = false;
+  }
 }
 
 // Setup event listeners
@@ -1089,6 +1171,9 @@ function setupEventListeners() {
     document.getElementById('searchBox').classList.remove('has-text');
     applyFiltersAndSort();
   });
+
+  // Scan artifacts button
+  document.getElementById('scanArtifactsBtn').addEventListener('click', scanArtifacts);
 
   // Export all button
   document.getElementById('exportAllBtn').addEventListener('click', exportAllFiltered);

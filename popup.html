@@ -43,6 +43,7 @@
 
     body {
       width: 350px;
+      min-height: 600px;
       padding: 8px;
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
       margin: 0;
@@ -105,6 +106,9 @@
     .options {
       margin: 15px 0;
     }
+    .export-row {
+      margin-bottom: 15px;
+    }
     label {
       display: block;
       margin: 8px 0;
@@ -140,7 +144,7 @@
     <!-- Chat Export Options -->
     <div class="export-row">
       <label>
-        Chats:
+        Chat format:
         <select id="format">
           <option value="json">JSON</option>
           <option value="markdown">Markdown</option>
@@ -155,7 +159,7 @@
 
       <label title="Include extended thinking blocks in the exported conversation">
         <input type="checkbox" id="includeThinking">
-        Extended Thinking
+        Thinking
       </label>
 
       <label title="Add conversation metadata (name, date, model, etc.) at the top of exported files">
@@ -167,7 +171,7 @@
     <!-- Artifact Export Options -->
     <div class="export-row">
       <label>
-        Artifacts:
+        Artifact format:
         <select id="artifactFormat">
           <option value="original">Original</option>
           <option value="markdown">Markdown</option>

@@ -189,7 +189,28 @@
     .search-box.has-text .clear-btn {
       display: block;
     }
-    
+
+    .scan-artifacts-btn {
+      padding: 10px 20px;
+      background: var(--secondary-bg);
+      color: var(--text-primary);
+      border: 1px solid var(--border-color);
+      border-radius: 5px;
+      cursor: pointer;
+      font-size: 14px;
+      white-space: nowrap;
+      transition: background 0.2s;
+    }
+
+    .scan-artifacts-btn:hover {
+      background: var(--hover-bg);
+    }
+
+    .scan-artifacts-btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
     .filter-group {
       display: flex;
       gap: 10px;
@@ -572,12 +593,16 @@
         <button class="clear-btn" id="clearSearch">✕</button>
       </div>
 
+      <button class="scan-artifacts-btn" id="scanArtifactsBtn">
+        Search Artifacts
+      </button>
+
       <div class="export-controls-wrapper">
         <div class="export-settings">
           <div class="export-row">
             <div class="export-section chat-section">
               <label>
-                Chats:
+                Chat format:
                 <select id="exportFormat">
                   <option value="json">JSON</option>
                   <option value="markdown">Markdown</option>
@@ -606,7 +631,7 @@
 
             <div class="export-section artifact-section">
               <label>
-                Artifacts:
+                Artifact format:
                 <select id="artifactFormat">
                   <option value="original">Original</option>
                   <option value="markdown">Markdown</option>
