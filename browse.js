@@ -167,7 +167,6 @@ async function loadConversations() {
   try {
     // Load projects first
     const projects = await loadProjects();
-    populateProjectFilter(projects);
 
     const response = await fetch(`https://claude.ai/api/organizations/${orgId}/chat_conversations`, {
       credentials: 'include',
@@ -203,30 +202,6 @@ async function loadConversations() {
   }
 }
 
-// Populate project filter dropdown
-function populateProjectFilter(projects) {
-  const projectFilter = document.getElementById('projectFilter');
-  if (!projectFilter) return;
-
-  projectFilter.innerHTML = '<option value="">All Projects</option>';
-
-  if (!projects || projects.length === 0) {
-    console.log('No projects available');
-    return;
-  }
-
-  // Add each project to dropdown
-  projects.forEach(project => {
-    const option = document.createElement('option');
-    // Use uuid as value (most likely field name)
-    option.value = project.uuid || project.id;
-    option.textContent = project.name || project.title || 'Untitled Project';
-    projectFilter.appendChild(option);
-  });
-
-  console.log(`Populated ${projects.length} projects in dropdown`);
-}
-
 // Format model name for display
 function formatModelName(model) {
   return MODEL_DISPLAY_NAMES[model] || model;
@@ -250,7 +225,6 @@ function getModelBadgeClass(model) {
 // Apply filters and sorting
 function applyFiltersAndSort() {
   const searchTerm = document.getElementById('searchInput').value.toLowerCase();
-  const projectFilter = document.getElementById('projectFilter')?.value;
 
   // Filter conversations
   filteredConversations = allConversations.filter(conv => {
@@ -258,13 +232,7 @@ function applyFiltersAndSort() {
       conv.name.toLowerCase().includes(searchTerm) ||
       (conv.summary && conv.summary.toLowerCase().includes(searchTerm));
 
-    // Project filtering - check various possible field names
-    const matchesProject = !projectFilter ||
-      conv.project_uuid === projectFilter ||
-      conv.project_id === projectFilter ||
-      conv.projectUuid === projectFilter;
-
-    return matchesSearch && matchesProject;
+    return matchesSearch;
   });
 
   // Sort conversations
@@ -1070,12 +1038,6 @@ function setupEventListeners() {
     document.getElementById('searchBox').classList.remove('has-text');
     applyFiltersAndSort();
   });
-  
-  // Project filter (not yet implemented - just placeholder)
-  const projectFilter = document.getElementById('projectFilter');
-  if (projectFilter) {
-    projectFilter.addEventListener('change', applyFiltersAndSort);
-  }
 
   // Export all button
   document.getElementById('exportAllBtn').addEventListener('click', exportAllFiltered);
