@@ -231,7 +231,7 @@ Feel free to submit issues or pull requests if you find bugs or have suggestions
 
 ## License
 
-[Add your chosen license here]
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
 ## Acknowledgments
 
