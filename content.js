@@ -105,10 +105,17 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                   conversationFilename = `${data.name || request.conversationId}.json`;
               }
 
-              zip.file(conversationFilename, conversationContent);
+              // Flat export: add to Chats folder
+              if (request.flattenArtifacts && !request.extractArtifacts) {
+                const chatsFolder = zip.folder('Chats');
+                chatsFolder.file(conversationFilename, conversationContent);
+              } else {
+                // Nested or no artifact extraction: add to root
+                zip.file(conversationFilename, conversationContent);
+              }
             }
 
-            // Add artifact files - nested and/or flat
+            // Add artifact files
             // Nested: create artifacts subfolder
             if (request.extractArtifacts) {
               const artifactsFolder = request.includeChats !== false ? zip.folder('artifacts') : zip;
@@ -117,11 +124,12 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
               }
             }
 
-            // Flat: add artifacts with conversation name prefix in same folder
-            if (request.flattenArtifacts) {
+            // Flat: add artifacts with conversation name prefix to Artifacts folder
+            if (request.flattenArtifacts && !request.extractArtifacts) {
+              const artifactsFolder = zip.folder('Artifacts');
               for (const artifact of artifactFiles) {
                 const filename = `${data.name || request.conversationId}_${artifact.filename}`;
-                zip.file(filename, artifact.content);
+                artifactsFolder.file(filename, artifact.content);
               }
             }
 
@@ -254,52 +262,50 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
               // Sanitize folder name
               const folderName = (conv.name || conv.uuid).replace(/[<>:"/\\|?*]/g, '_');
 
-              // Special case: ONLY flat artifacts (no chats, no nested) - dump all in root
-              if (request.flattenArtifacts && !request.extractArtifacts && request.includeChats === false) {
-                // Add artifacts directly to ZIP root with conversation name prefix
+              // Generate conversation content
+              let conversationContent, conversationFilename;
+              if (request.format === 'markdown') {
+                conversationContent = convertToMarkdown(fullConv, request.includeMetadata, conv.uuid, request.includeArtifacts, request.includeThinking);
+                conversationFilename = `${folderName}.md`;
+              } else if (request.format === 'text') {
+                conversationContent = convertToText(fullConv, request.includeMetadata, request.includeArtifacts, request.includeThinking);
+                conversationFilename = `${folderName}.txt`;
+              } else {
+                conversationContent = JSON.stringify(fullConv, null, 2);
+                conversationFilename = `${folderName}.json`;
+              }
+
+              // Flat export: use Chats and Artifacts top-level folders
+              if (request.flattenArtifacts && !request.extractArtifacts) {
+                // Add chat file to Chats folder if chats are enabled
+                if (request.includeChats !== false) {
+                  const chatsFolder = zip.folder('Chats');
+                  chatsFolder.file(conversationFilename, conversationContent);
+                }
+
+                // Add artifacts to Artifacts folder with conversation name prefix
                 if (artifactFiles.length > 0) {
+                  const artifactsFolder = zip.folder('Artifacts');
                   for (const artifact of artifactFiles) {
                     const artifactFilename = `${folderName}_${artifact.filename}`;
-                    zip.file(artifactFilename, artifact.content);
+                    artifactsFolder.file(artifactFilename, artifact.content);
                   }
                 }
-              } else {
-                // Create conversation folder for structured export
+              }
+              // Nested export: create per-conversation folders with artifacts subfolder
+              else if (request.extractArtifacts) {
                 const convFolder = zip.folder(folderName);
 
                 // Add conversation file only if includeChats is true
                 if (request.includeChats !== false) {
-                  let conversationContent, conversationFilename;
-                  if (request.format === 'markdown') {
-                    conversationContent = convertToMarkdown(fullConv, request.includeMetadata, conv.uuid, request.includeArtifacts, request.includeThinking);
-                    conversationFilename = `${folderName}.md`;
-                  } else if (request.format === 'text') {
-                    conversationContent = convertToText(fullConv, request.includeMetadata, request.includeArtifacts, request.includeThinking);
-                    conversationFilename = `${folderName}.txt`;
-                  } else {
-                    conversationContent = JSON.stringify(fullConv, null, 2);
-                    conversationFilename = `${folderName}.json`;
-                  }
-
                   convFolder.file(conversationFilename, conversationContent);
                 }
 
-                // Add artifact files - nested and/or flat
+                // Add artifact files in nested artifacts subfolder
                 if (artifactFiles.length > 0) {
-                  // Nested: create artifacts subfolder
-                  if (request.extractArtifacts) {
-                    const artifactsFolder = request.includeChats !== false ? convFolder.folder('artifacts') : convFolder;
-                    for (const artifact of artifactFiles) {
-                      artifactsFolder.file(artifact.filename, artifact.content);
-                    }
-                  }
-
-                  // Flat: add artifacts with conversation name prefix in same folder
-                  if (request.flattenArtifacts) {
-                    for (const artifact of artifactFiles) {
-                      const artifactFilename = `${folderName}_${artifact.filename}`;
-                      convFolder.file(artifactFilename, artifact.content);
-                    }
+                  const artifactsFolder = request.includeChats !== false ? convFolder.folder('artifacts') : convFolder;
+                  for (const artifact of artifactFiles) {
+                    artifactsFolder.file(artifact.filename, artifact.content);
                   }
                 }
               }

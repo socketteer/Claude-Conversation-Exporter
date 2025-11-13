@@ -543,7 +543,6 @@ async function exportConversation(conversationId, conversationName) {
   const includeChats = document.getElementById('includeChats').checked;
   const includeThinking = document.getElementById('includeThinking').checked;
   const includeMetadata = document.getElementById('includeMetadata').checked;
-  const includeMemory = document.getElementById('includeMemory').checked;
   const includeArtifacts = document.getElementById('includeArtifacts').checked;
   const extractArtifacts = document.getElementById('extractArtifacts').checked;
   const artifactFormat = document.getElementById('artifactFormat').value;
@@ -596,10 +595,17 @@ async function exportConversation(conversationId, conversationName) {
               conversationFilename = `${conversationName || conversationId}.json`;
           }
 
-          zip.file(conversationFilename, conversationContent);
+          // Flat export: add to Chats folder
+          if (flattenArtifacts && !extractArtifacts) {
+            const chatsFolder = zip.folder('Chats');
+            chatsFolder.file(conversationFilename, conversationContent);
+          } else {
+            // Nested or no artifact extraction: add to root
+            zip.file(conversationFilename, conversationContent);
+          }
         }
 
-        // Add artifact files - nested and/or flat
+        // Add artifact files
         // Nested: create artifacts subfolder
         if (extractArtifacts) {
           const artifactsFolder = includeChats !== false ? zip.folder('artifacts') : zip;
@@ -608,11 +614,12 @@ async function exportConversation(conversationId, conversationName) {
           }
         }
 
-        // Flat: add artifacts with conversation name prefix in same folder
-        if (flattenArtifacts) {
+        // Flat: add artifacts with conversation name prefix to Artifacts folder
+        if (flattenArtifacts && !extractArtifacts) {
+          const artifactsFolder = zip.folder('Artifacts');
           for (const artifact of artifactFiles) {
             const filename = `${conversationName}_${artifact.filename}`;
-            zip.file(filename, artifact.content);
+            artifactsFolder.file(filename, artifact.content);
           }
         }
 
@@ -789,18 +796,25 @@ async function exportAllFiltered() {
               filename = `${safeName}.json`;
           }
 
-          // Special case: ONLY flat artifacts (no chats, no nested) - dump all in root
-          if (flattenArtifacts && !extractArtifacts && includeChats === false) {
-            // Add artifacts directly to ZIP root with conversation name prefix
+          // Flat export: use Chats and Artifacts top-level folders
+          if (flattenArtifacts && !extractArtifacts) {
+            // Add chat file to Chats folder if chats are enabled
+            if (includeChats !== false) {
+              const chatsFolder = zip.folder('Chats');
+              chatsFolder.file(filename, content);
+            }
+
+            // Add artifacts to Artifacts folder with conversation name prefix
             if (artifactFiles.length > 0) {
+              const artifactsFolder = zip.folder('Artifacts');
               for (const artifact of artifactFiles) {
                 const artifactFilename = `${safeName}_${artifact.filename}`;
-                zip.file(artifactFilename, artifact.content);
+                artifactsFolder.file(artifactFilename, artifact.content);
               }
             }
           }
-          // If extracting artifacts (nested or flat with other options), create folder structure
-          else if (extractArtifacts || flattenArtifacts) {
+          // Nested export: create per-conversation folders with artifacts subfolder
+          else if (extractArtifacts) {
             const convFolder = zip.folder(safeName);
 
             // Add conversation file only if includeChats is true
@@ -808,26 +822,15 @@ async function exportAllFiltered() {
               convFolder.file(filename, content);
             }
 
-            // Add artifact files - nested and/or flat
+            // Add artifact files in nested artifacts subfolder
             if (artifactFiles.length > 0) {
-              // Nested: create artifacts subfolder
-              if (extractArtifacts) {
-                const artifactsFolder = includeChats !== false ? convFolder.folder('artifacts') : convFolder;
-                for (const artifact of artifactFiles) {
-                  artifactsFolder.file(artifact.filename, artifact.content);
-                }
-              }
-
-              // Flat: add artifacts with conversation name prefix in same folder
-              if (flattenArtifacts) {
-                for (const artifact of artifactFiles) {
-                  const artifactFilename = `${safeName}_${artifact.filename}`;
-                  convFolder.file(artifactFilename, artifact.content);
-                }
+              const artifactsFolder = includeChats !== false ? convFolder.folder('artifacts') : convFolder;
+              for (const artifact of artifactFiles) {
+                artifactsFolder.file(artifact.filename, artifact.content);
               }
             }
           } else {
-            // Add file to ZIP root only if chats are enabled
+            // No artifact extraction - add file to ZIP root only if chats are enabled
             if (includeChats !== false) {
               zip.file(filename, content);
             }
@@ -993,23 +996,20 @@ function setupEventListeners() {
   const includeChatsCheckbox = document.getElementById('includeChats');
   const includeThinkingCheckbox = document.getElementById('includeThinking');
   const includeMetadataCheckbox = document.getElementById('includeMetadata');
-  const includeMemoryCheckbox = document.getElementById('includeMemory');
   const includeArtifactsCheckbox = document.getElementById('includeArtifacts');
 
   function updateCheckboxStates() {
     const chatsEnabled = includeChatsCheckbox.checked;
 
-    // Disable thinking, metadata, memory and inline artifacts when chats is unchecked
+    // Disable thinking, metadata and inline artifacts when chats is unchecked
     includeThinkingCheckbox.disabled = !chatsEnabled;
     includeMetadataCheckbox.disabled = !chatsEnabled;
-    includeMemoryCheckbox.disabled = !chatsEnabled;
     includeArtifactsCheckbox.disabled = !chatsEnabled;
 
     // Optionally uncheck them when disabled
     if (!chatsEnabled) {
       includeThinkingCheckbox.checked = false;
       includeMetadataCheckbox.checked = false;
-      includeMemoryCheckbox.checked = false;
       includeArtifactsCheckbox.checked = false;
     }
   }
