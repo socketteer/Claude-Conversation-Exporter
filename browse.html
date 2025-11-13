@@ -191,13 +191,13 @@
     }
 
     .scan-artifacts-btn {
-      padding: 10px 20px;
+      padding: 8px 16px;
       background: var(--secondary-bg);
       color: var(--text-primary);
       border: 1px solid var(--border-color);
       border-radius: 5px;
       cursor: pointer;
-      font-size: 14px;
+      font-size: 13px;
       white-space: nowrap;
       transition: background 0.2s;
     }
@@ -668,12 +668,9 @@
                 Global
               </label>
 
-              <label title="Include project-specific memories">
-                Project:
-                <select id="projectMemorySelect" style="width: 75%;">
-                  <option value="none">None</option>
-                  <option value="all">All</option>
-                </select>
+              <label title="Include project memories for conversations that belong to projects">
+                <input type="checkbox" id="includeProjectMemory">
+                Project
               </label>
             </div>
           </div>
