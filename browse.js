@@ -49,6 +49,7 @@ let allConversations = [];
 let filteredConversations = [];
 let allProjects = [];
 let projectsMap = {}; // Map project UUID to project name
+let conversationArtifacts = new Map(); // Map conversation UUID to artifact count
 let orgId = null;
 let currentSort = 'updated_desc';
 let sortStack = []; // Track multi-level sorting: [{field: 'name', direction: 'asc'}, ...]
@@ -347,6 +348,7 @@ function displayConversations() {
           <th class="sortable" data-sort="updated">Last Updated${getSortIndicator('updated')}</th>
           <th class="sortable" data-sort="created">Created${getSortIndicator('created')}</th>
           <th class="sortable" data-sort="model">Model${getSortIndicator('model')}</th>
+          <th class="artifacts-col" title="Contains artifacts">📎</th>
           <th>Actions</th>
           <th class="checkbox-col">
             <input type="checkbox" id="selectAll" class="select-all-checkbox" ${selectedConversations.size > 0 ? 'checked' : ''}>
@@ -361,6 +363,8 @@ function displayConversations() {
     const createdDate = new Date(conv.created_at).toLocaleDateString();
     const modelBadgeClass = getModelBadgeClass(conv.model);
     const projectName = getProjectName(conv);
+    const artifactCount = conversationArtifacts.get(conv.uuid);
+    const artifactIndicator = artifactCount ? `<span class="artifact-badge" title="${artifactCount} artifact(s)">📎 ${artifactCount}</span>` : '';
 
     html += `
       <tr data-id="${conv.uuid}">
@@ -379,6 +383,7 @@ function displayConversations() {
             ${formatModelName(conv.model)}
           </span>
         </td>
+        <td class="artifacts-col">${artifactIndicator}</td>
         <td>
           <div class="actions">
             <button class="btn-small btn-export" data-id="${conv.uuid}" data-name="${conv.name}">
@@ -573,6 +578,12 @@ async function exportConversation(conversationId, conversationName) {
     // Check if we need to extract artifacts to separate files
     if (extractArtifacts || flattenArtifacts) {
       const artifactFiles = extractArtifactFiles(data, artifactFormat);
+
+      // Update artifact count for this conversation
+      if (artifactFiles.length > 0) {
+        conversationArtifacts.set(conversationId, artifactFiles.length);
+        displayConversations(); // Refresh table to show indicator
+      }
 
       if (artifactFiles.length > 0) {
         // Create a ZIP with artifacts (and optionally conversation)
