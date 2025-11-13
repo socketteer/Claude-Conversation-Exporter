@@ -162,11 +162,6 @@
         <input type="checkbox" id="includeMetadata">
         Metadata
       </label>
-
-      <label title="Include global memory in the exported conversation">
-        <input type="checkbox" id="includeMemory">
-        Memory
-      </label>
     </div>
 
     <!-- Artifact Export Options -->
@@ -200,6 +195,36 @@
 
   <button id="exportCurrent">Export Current Conversation</button>
   <button id="exportAll">Export All Conversations</button>
+
+  <div style="margin-top: 15px; padding-top: 15px; border-top: 1px solid var(--border-color);">
+    <h3 style="font-size: 14px; margin-bottom: 10px; color: var(--text-color);">Memory Export</h3>
+
+    <div class="options">
+      <div class="export-row">
+        <label>
+          Format:
+          <select id="memoryFormat">
+            <option value="json">JSON</option>
+            <option value="markdown">Markdown</option>
+            <option value="text">Plain Text</option>
+          </select>
+        </label>
+
+        <label title="Include global organizational memory">
+          <input type="checkbox" id="includeGlobalMemory" checked>
+          Global
+        </label>
+
+        <label title="Include project-specific memory">
+          <input type="checkbox" id="includeProjectMemory" checked>
+          Project
+        </label>
+      </div>
+    </div>
+
+    <button id="exportMemory">Export Memory</button>
+  </div>
+
   <button id="browseConversations">Browse All Conversations</button>
   
   <div id="status"></div>

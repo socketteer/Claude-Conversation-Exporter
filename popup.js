@@ -20,23 +20,20 @@ document.addEventListener('DOMContentLoaded', async () => {
   const includeChatsCheckbox = document.getElementById('includeChats');
   const includeThinkingCheckbox = document.getElementById('includeThinking');
   const includeMetadataCheckbox = document.getElementById('includeMetadata');
-  const includeMemoryCheckbox = document.getElementById('includeMemory');
   const includeArtifactsCheckbox = document.getElementById('includeArtifacts');
 
   function updateCheckboxStates() {
     const chatsEnabled = includeChatsCheckbox.checked;
 
-    // Disable thinking, metadata, memory and inline artifacts when chats is unchecked
+    // Disable thinking, metadata and inline artifacts when chats is unchecked
     includeThinkingCheckbox.disabled = !chatsEnabled;
     includeMetadataCheckbox.disabled = !chatsEnabled;
-    includeMemoryCheckbox.disabled = !chatsEnabled;
     includeArtifactsCheckbox.disabled = !chatsEnabled;
 
     // Optionally uncheck them when disabled
     if (!chatsEnabled) {
       includeThinkingCheckbox.checked = false;
       includeMetadataCheckbox.checked = false;
-      includeMemoryCheckbox.checked = false;
       includeArtifactsCheckbox.checked = false;
     }
   }
@@ -105,7 +102,6 @@ document.getElementById('exportCurrent').addEventListener('click', async () => {
       includeChats: document.getElementById('includeChats').checked,
       includeThinking: document.getElementById('includeThinking').checked,
       includeMetadata: document.getElementById('includeMetadata').checked,
-      includeMemory: document.getElementById('includeMemory').checked,
       includeArtifacts: document.getElementById('includeArtifacts').checked,
       extractArtifacts: document.getElementById('extractArtifacts').checked,
       artifactFormat: document.getElementById('artifactFormat').value,
@@ -136,6 +132,57 @@ document.getElementById('exportCurrent').addEventListener('click', async () => {
   // Browse conversations
   document.getElementById('browseConversations').addEventListener('click', () => {
     chrome.tabs.create({ url: chrome.runtime.getURL('browse.html') });
+  });
+
+  // Export Memory
+  document.getElementById('exportMemory').addEventListener('click', async () => {
+    const button = document.getElementById('exportMemory');
+    button.disabled = true;
+    showStatus('Fetching memory...', 'info');
+
+    try {
+      const orgId = await getOrgId();
+
+      if (!orgId) {
+        throw new Error('Organization ID not configured. Click the setup link above to configure it.');
+      }
+
+      const includeGlobal = document.getElementById('includeGlobalMemory').checked;
+      const includeProject = document.getElementById('includeProjectMemory').checked;
+
+      if (!includeGlobal && !includeProject) {
+        throw new Error('Please select at least one memory type to export (Global or Project).');
+      }
+
+      const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+
+      chrome.tabs.sendMessage(tab.id, {
+        action: 'exportMemory',
+        orgId,
+        format: document.getElementById('memoryFormat').value,
+        includeGlobal,
+        includeProject
+      }, (response) => {
+        if (chrome.runtime.lastError) {
+          console.error('Chrome runtime error:', chrome.runtime.lastError);
+          showStatus(`Error: ${chrome.runtime.lastError.message}`, 'error');
+          button.disabled = false;
+          return;
+        }
+
+        if (response?.success) {
+          showStatus('Memory exported successfully!', 'success');
+        } else {
+          const errorMsg = response?.error || 'Export failed';
+          console.error('Export failed:', errorMsg, response?.details);
+          showStatus(errorMsg, 'error');
+        }
+        button.disabled = false;
+      });
+    } catch (error) {
+      showStatus(error.message, 'error');
+      button.disabled = false;
+    }
   });
   
   // Export all conversations

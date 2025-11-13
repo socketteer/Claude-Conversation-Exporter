@@ -722,7 +722,6 @@ async function exportAllFiltered() {
   const includeChats = document.getElementById('includeChats').checked;
   const includeThinking = document.getElementById('includeThinking').checked;
   const includeMetadata = document.getElementById('includeMetadata').checked;
-  const includeMemory = document.getElementById('includeMemory').checked;
   const includeArtifacts = document.getElementById('includeArtifacts').checked;
   const extractArtifacts = document.getElementById('extractArtifacts').checked;
   const artifactFormat = document.getElementById('artifactFormat').value;
@@ -942,6 +941,63 @@ async function exportAllFiltered() {
   }
 }
 
+// Export memory
+async function exportMemory() {
+  const format = document.getElementById('memoryFormat').value;
+  const includeGlobal = document.getElementById('includeGlobalMemory').checked;
+  const includeProject = document.getElementById('includeProjectMemory').checked;
+
+  if (!includeGlobal && !includeProject) {
+    showToast('Please select at least one memory type to export (Global or Project)', true);
+    return;
+  }
+
+  const button = document.getElementById('exportMemoryBtn');
+  button.disabled = true;
+  const originalButtonText = button.textContent;
+  button.textContent = 'Fetching...';
+
+  try {
+    const memory = await fetchMemory(orgId, includeGlobal, includeProject);
+
+    if (!memory.global && !memory.project) {
+      showToast('No memory data found', true);
+      return;
+    }
+
+    // Generate filename and content based on format
+    let content, filename;
+    const now = new Date();
+    const datetime = now.toISOString().replace(/[:.]/g, '-').slice(0, 19).replace('T', '_');
+
+    switch (format) {
+      case 'markdown':
+        content = formatMemoryMarkdown(memory);
+        filename = `claude-memory-${datetime}.md`;
+        break;
+      case 'text':
+        content = formatMemoryText(memory);
+        filename = `claude-memory-${datetime}.txt`;
+        break;
+      case 'json':
+        content = JSON.stringify(memory, null, 2);
+        filename = `claude-memory-${datetime}.json`;
+        break;
+    }
+
+    // Download the file
+    downloadFile(content, filename);
+    showToast('Memory exported successfully!');
+
+  } catch (error) {
+    console.error('Memory export error:', error);
+    showToast(`Export failed: ${error.message}`, true);
+  } finally {
+    button.disabled = false;
+    button.textContent = originalButtonText;
+  }
+}
+
 // Conversion functions are now imported from utils.js
 // Functions available: getCurrentBranch, convertToMarkdown, convertToText, downloadFile
 
@@ -1023,4 +1079,7 @@ function setupEventListeners() {
 
   // Export all button
   document.getElementById('exportAllBtn').addEventListener('click', exportAllFiltered);
+
+  // Export Memory button
+  document.getElementById('exportMemoryBtn').addEventListener('click', exportMemory);
 }
