@@ -343,14 +343,18 @@
       cursor: pointer;
       user-select: none;
       position: relative;
-      padding-right: 35px; /* Reserve space for sort indicator */
+      padding-left: 35px; /* Reserve space for sort indicator on left */
     }
 
     th.sortable .sort-indicator {
       position: absolute;
-      right: 10px;
+      left: 10px;  /* Position on left */
       top: 50%;
       transform: translateY(-50%);
+    }
+
+    th[data-sort="project"] {
+      max-width: 150px;
     }
 
     tbody tr {
