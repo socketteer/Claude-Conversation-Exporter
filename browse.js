@@ -352,7 +352,7 @@ function displayConversations() {
         <tr>
           <th class="sortable" data-sort="name">Name${getSortIndicator('name')}</th>
           <th class="sortable" data-sort="project">Project${getSortIndicator('project')}</th>
-          <th class="sortable" data-sort="updated">Last Updated${getSortIndicator('updated')}</th>
+          <th class="sortable" data-sort="updated">Updated${getSortIndicator('updated')}</th>
           <th class="sortable" data-sort="created">Created${getSortIndicator('created')}</th>
           <th class="sortable" data-sort="model">Model${getSortIndicator('model')}</th>
           <th class="sortable artifacts-col" data-sort="artifacts">Artifacts${getSortIndicator('artifacts')}</th>
