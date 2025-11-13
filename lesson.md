@@ -51,6 +51,56 @@ th[data-sort="model"] { }
 .container .item { }
 ```
 
+### Understanding Multiple Classes
+
+This is confusing at first! Let's break it down:
+
+**In HTML**, multiple classes are separated by SPACES:
+```html
+<!-- This element has TWO separate classes -->
+<th class="sortable artifacts-col" data-sort="artifacts">
+           ^^^^^^^^  ^^^^^^^^^^^^^
+           class 1   class 2
+```
+
+**In CSS**, you chain classes together with DOTS (no spaces):
+```css
+/* Targets elements with BOTH classes (AND logic) */
+th.sortable.artifacts-col {
+  /* Matches the element above! */
+}
+```
+
+**Why does this matter?**
+
+Look at our column headers:
+```html
+<!-- Most columns: ONE class -->
+<th class="sortable" data-sort="name">Name</th>
+<th class="sortable" data-sort="project">Project</th>
+
+<!-- Artifacts column: TWO classes -->
+<th class="sortable artifacts-col" data-sort="artifacts">Artifacts</th>
+```
+
+**Different ways to target them:**
+
+```css
+/* Targets ALL sortable headers (including Artifacts) */
+th.sortable { }
+
+/* Targets ONLY the Artifacts header (has both classes) */
+th.sortable.artifacts-col { }
+
+/* Also targets ONLY Artifacts header (using attribute) */
+th[data-sort="artifacts"] { }
+```
+
+**Why use multiple classes?**
+- `.sortable` provides shared sorting behavior for ALL columns
+- `.artifacts-col` adds special styling ONLY for Artifacts column
+- This is more maintainable than repeating code!
+
 ### Real Examples from Our Project
 
 ```css
