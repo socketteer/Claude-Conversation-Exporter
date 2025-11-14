@@ -148,6 +148,166 @@ Every element is a box with four layers:
 └─────────────────────────────────────┘
 ```
 
+### Understanding Each Layer
+
+**1. Content** - The actual stuff (text, images, etc.)
+```css
+width: 200px;   /* Content area width */
+height: 100px;  /* Content area height */
+```
+
+**2. Padding** - Space INSIDE the border, around content
+```css
+padding: 20px;  /* Pushes content away from border */
+/* Background color extends through padding! */
+```
+
+**3. Border** - The edge of the box
+```css
+border: 2px solid black;  /* Takes up 2px on each side */
+```
+
+**4. Margin** - Space OUTSIDE the border, around the element
+```css
+margin: 10px;  /* Transparent - pushes other elements away */
+/* Background color does NOT extend into margin */
+```
+
+### Calculating Total Size
+
+**This is where it gets tricky!**
+
+```css
+.box {
+  width: 200px;
+  padding: 20px;
+  border: 5px solid black;
+  margin: 10px;
+}
+```
+
+**Question:** How wide is this element?
+
+**Answer (by default):**
+- Content: 200px
+- Padding: 20px × 2 = 40px (left + right)
+- Border: 5px × 2 = 10px (left + right)
+- **Total visible width: 250px** (200 + 40 + 10)
+- Margin adds another 20px of space around it (but isn't part of the element)
+
+**This is confusing!** You said `width: 200px` but the box is 250px wide!
+
+### The box-sizing Fix
+
+```css
+/* Old way (default) - width is JUST content */
+box-sizing: content-box;
+
+/* Better way - width includes padding and border */
+box-sizing: border-box;
+```
+
+**With border-box:**
+```css
+.box {
+  box-sizing: border-box;
+  width: 200px;      /* Total width INCLUDING padding + border */
+  padding: 20px;
+  border: 5px solid black;
+}
+```
+
+Now the element is ACTUALLY 200px wide! The browser shrinks the content area to make room for padding and border.
+
+**Pro tip:** Most modern CSS resets include:
+```css
+* {
+  box-sizing: border-box;  /* Apply to everything */
+}
+```
+
+### Margin Collapse - The Sneaky One
+
+**Vertical margins between elements collapse!**
+
+```html
+<div style="margin-bottom: 20px;">First</div>
+<div style="margin-top: 30px;">Second</div>
+```
+
+**You'd expect:** 50px gap (20 + 30)
+**What you get:** 30px gap (the LARGER of the two wins!)
+
+**Margin collapse ONLY happens when:**
+- Both elements are in normal flow (not floated/absolutely positioned)
+- Margins are touching (no border or padding between)
+- Vertical margins only (horizontal margins never collapse)
+
+**How to prevent it:**
+- Add `padding` or `border` to parent
+- Use `display: flex` or `display: grid` on parent
+- Make elements `position: absolute` or `float`
+
+### How Position Affects the Box Model
+
+**Position changes how margins/padding work:**
+
+```css
+/* Static/Relative - normal box model */
+position: static;   /* Default */
+position: relative; /* Same box model, just offset */
+
+/* Absolute/Fixed - removed from normal flow */
+position: absolute; /* Margins don't collapse, takes up no space */
+position: fixed;    /* Same as absolute, but viewport-relative */
+```
+
+**Example:**
+```css
+.parent {
+  position: relative;
+  padding: 20px;  /* Space inside */
+}
+
+.child {
+  position: absolute;
+  top: 0;
+  left: 0;
+  /* Child ignores parent's padding! */
+  /* Positioned relative to parent's BORDER edge, not padding edge */
+}
+```
+
+### Real Example: Header Alignment Issues
+
+**The problem:** Table headers were misaligned because padding and positioning were fighting!
+
+```css
+/* Before - padding adds to width */
+th {
+  padding: 15px;           /* Adds 30px to width (15px each side) */
+  width: 100px;            /* Element is actually 130px wide! */
+}
+
+th.sortable {
+  padding-right: 35px;     /* Now 150px wide! Column jumps! */
+}
+```
+
+**After - absolute positioning removes indicator from flow:**
+```css
+th.sortable {
+  position: relative;      /* Create positioning context */
+  padding-left: 35px;      /* Reserve space */
+}
+
+th.sortable .sort-indicator {
+  position: absolute;      /* Remove from box model */
+  left: 10px;             /* Position in reserved space */
+  /* Doesn't affect width calculation! */
+}
+```
+
 ### The Margin Conspiracy
 
 **Problem we faced:** Popup was too tall, but why?
