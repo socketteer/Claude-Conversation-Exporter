@@ -1,6 +1,121 @@
 // Note: Organization ID is now stored in extension settings
 // Users need to configure it in the extension options page
 
+// Scrape share page data from DOM (share pages are server-rendered with no API)
+function scrapeSharePage() {
+  const shareId = window.location.pathname.split('/').pop();
+
+  // Get title from header or meta tags
+  const headerEl = document.querySelector('[data-testid="page-header"]');
+  let title = headerEl ? headerEl.innerText : document.title.replace(' | Claude', '');
+
+  // Also try og:title as fallback
+  const ogTitle = document.querySelector('meta[property="og:title"]')?.content;
+
+  // Extract "Shared by X" and remove from title
+  let sharedBy = null;
+  const sharedByMatch = title.match(/\nShared by .+$/);
+  if (sharedByMatch) {
+    sharedBy = sharedByMatch[0].replace('\n', '').trim();
+    title = title.replace(sharedByMatch[0], '');
+  }
+
+  // Use og:title if it's cleaner
+  if (ogTitle && !ogTitle.includes('Shared by')) {
+    title = ogTitle;
+  }
+
+  // Get description from meta
+  const description = document.querySelector('meta[property="og:description"]')?.content ||
+                      document.querySelector('meta[name="description"]')?.content;
+
+  // Extract messages from DOM
+  const messages = [];
+  const userMsgEls = document.querySelectorAll('[data-testid="user-message"]');
+  const claudeResponseEls = document.querySelectorAll('.font-claude-response');
+
+  // Interleave user and Claude messages
+  const maxLen = Math.max(userMsgEls.length, claudeResponseEls.length);
+  for (let i = 0; i < maxLen; i++) {
+    if (i < userMsgEls.length) {
+      const userEl = userMsgEls[i].querySelector('[class*="font-user-message"]') || userMsgEls[i];
+      messages.push({
+        sender: 'human',
+        text: userEl.innerText,
+        index: messages.length
+      });
+    }
+    if (i < claudeResponseEls.length) {
+      messages.push({
+        sender: 'assistant',
+        text: claudeResponseEls[i].innerText,
+        index: messages.length
+      });
+    }
+  }
+
+  return {
+    uuid: shareId,
+    name: title,
+    description: description,
+    sharedBy: sharedBy,
+    source_url: window.location.href,
+    model: null, // Not available on share pages
+    created_at: null, // Not available on share pages
+    updated_at: null, // Not available on share pages
+    scraped_at: new Date().toISOString(),
+    isSharePage: true,
+    message_count: messages.length,
+    messages: messages
+  };
+}
+
+// Convert share page data to markdown
+function convertShareToMarkdown(data, includeMetadata) {
+  let markdown = `# ${data.name || 'Untitled Conversation'}\n\n`;
+
+  if (includeMetadata) {
+    if (data.sharedBy) markdown += `**${data.sharedBy}**\n`;
+    markdown += `**Source:** https://claude.ai/share/${data.uuid}\n\n`;
+    markdown += '---\n\n';
+  }
+
+  for (const message of data.messages) {
+    const sender = message.sender === 'human' ? '**You**' : '**Claude**';
+    markdown += `${sender}:\n\n${message.text}\n\n---\n\n`;
+  }
+
+  return markdown;
+}
+
+// Convert share page data to plain text
+function convertShareToText(data, includeMetadata) {
+  let text = '';
+
+  if (includeMetadata) {
+    text += `${data.name || 'Untitled Conversation'}\n`;
+    if (data.sharedBy) text += `${data.sharedBy}\n`;
+    text += `Source: https://claude.ai/share/${data.uuid}\n\n---\n\n`;
+  }
+
+  let humanSeen = false;
+  let assistantSeen = false;
+
+  data.messages.forEach((message) => {
+    let senderLabel;
+    if (message.sender === 'human') {
+      senderLabel = humanSeen ? 'H' : 'Human';
+      humanSeen = true;
+    } else {
+      senderLabel = assistantSeen ? 'A' : 'Assistant';
+      assistantSeen = true;
+    }
+    text += `${senderLabel}: ${message.text}\n\n`;
+  });
+
+  return text.trim();
+}
+
 // Default model timeline for null models
 const DEFAULT_MODEL_TIMELINE = [
   { date: new Date('2024-01-01'), model: 'claude-3-sonnet-20240229' }, // Before June 20, 2024
@@ -200,6 +315,49 @@ function downloadFile(content, filename, type = 'application/json') {
   
   // Handle messages from popup
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+  // Handle share page export (DOM scraping - no API available)
+  if (request.action === 'exportSharePage') {
+    console.log('Export share page request received:', request);
+
+    try {
+      const data = scrapeSharePage();
+      console.log('Share page scraped successfully:', data);
+
+      let content, filename, type;
+      const safeName = (data.name || data.uuid).replace(/[<>:"/\\|?*]/g, '_');
+
+      switch (request.format) {
+        case 'markdown':
+          content = convertShareToMarkdown(data, request.includeMetadata);
+          filename = `claude-share-${safeName}.md`;
+          type = 'text/markdown';
+          break;
+        case 'text':
+          content = convertShareToText(data, request.includeMetadata);
+          filename = `claude-share-${safeName}.txt`;
+          type = 'text/plain';
+          break;
+        default:
+          content = JSON.stringify(data, null, 2);
+          filename = `claude-share-${safeName}.json`;
+          type = 'application/json';
+      }
+
+      console.log('Downloading file:', filename);
+      downloadFile(content, filename, type);
+      sendResponse({ success: true });
+    } catch (error) {
+      console.error('Export share page error:', error);
+      sendResponse({
+        success: false,
+        error: error.message,
+        details: error.stack
+      });
+    }
+
+    return true;
+  }
+
   if (request.action === 'exportConversation') {
     console.log('Export conversation request received:', request);
     
