@@ -137,44 +137,62 @@ function scrapeSharePage() {
   const description = document.querySelector('meta[property="og:description"]')?.content ||
                       document.querySelector('meta[name="description"]')?.content;
 
-  // Extract messages from DOM
-  const messages = [];
+  // Extract messages from DOM in API-compatible format
+  const chat_messages = [];
   const userMsgEls = document.querySelectorAll('[data-testid="user-message"]');
   const claudeResponseEls = document.querySelectorAll('.font-claude-response');
 
   // Interleave user and Claude messages
   const maxLen = Math.max(userMsgEls.length, claudeResponseEls.length);
+  let prevUuid = '00000000-0000-4000-8000-000000000000';
+
   for (let i = 0; i < maxLen; i++) {
     if (i < userMsgEls.length) {
       const userEl = userMsgEls[i].querySelector('[class*="font-user-message"]') || userMsgEls[i];
-      messages.push({
+      const text = userEl.innerText;
+      const uuid = crypto.randomUUID();
+      chat_messages.push({
+        uuid: uuid,
+        text: text,
+        content: [{ type: 'text', text: text }],
         sender: 'human',
-        text: userEl.innerText, // Human messages are plain text
-        index: messages.length
+        index: chat_messages.length,
+        created_at: null,
+        updated_at: null,
+        parent_message_uuid: prevUuid
       });
+      prevUuid = uuid;
     }
     if (i < claudeResponseEls.length) {
-      messages.push({
+      const text = htmlToMarkdown(claudeResponseEls[i]);
+      const uuid = crypto.randomUUID();
+      chat_messages.push({
+        uuid: uuid,
+        text: text,
+        content: [{ type: 'text', text: text }],
         sender: 'assistant',
-        text: htmlToMarkdown(claudeResponseEls[i]), // Convert HTML to markdown
-        index: messages.length
+        index: chat_messages.length,
+        created_at: null,
+        updated_at: null,
+        parent_message_uuid: prevUuid
       });
+      prevUuid = uuid;
     }
   }
 
   return {
     uuid: shareId,
     name: title,
-    description: description,
+    summary: description,
     sharedBy: sharedBy,
     source_url: window.location.href,
-    model: null, // Not available on share pages
-    created_at: null, // Not available on share pages
-    updated_at: null, // Not available on share pages
+    model: null,
+    created_at: null,
+    updated_at: null,
     scraped_at: new Date().toISOString(),
-    isSharePage: true,
-    message_count: messages.length,
-    messages: messages
+    is_starred: false,
+    current_leaf_message_uuid: prevUuid,
+    chat_messages: chat_messages
   };
 }
 
@@ -188,7 +206,7 @@ function convertShareToMarkdown(data, includeMetadata) {
     markdown += '---\n\n';
   }
 
-  for (const message of data.messages) {
+  for (const message of data.chat_messages) {
     const sender = message.sender === 'human' ? '**You**' : '**Claude**';
     markdown += `${sender}:\n\n${message.text}\n\n---\n\n`;
   }
@@ -209,7 +227,7 @@ function convertShareToText(data, includeMetadata) {
   let humanSeen = false;
   let assistantSeen = false;
 
-  data.messages.forEach((message) => {
+  data.chat_messages.forEach((message) => {
     let senderLabel;
     if (message.sender === 'human') {
       senderLabel = humanSeen ? 'H' : 'Human';
