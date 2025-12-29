@@ -1,6 +1,114 @@
 // Note: Organization ID is now stored in extension settings
 // Users need to configure it in the extension options page
 
+// Convert HTML element to markdown
+function htmlToMarkdown(element) {
+  let result = '';
+
+  function processNode(node) {
+    if (node.nodeType === Node.TEXT_NODE) {
+      return node.textContent;
+    }
+
+    if (node.nodeType !== Node.ELEMENT_NODE) {
+      return '';
+    }
+
+    const tag = node.tagName.toLowerCase();
+    const children = Array.from(node.childNodes).map(processNode).join('');
+
+    switch (tag) {
+      case 'h1':
+        return `\n# ${children}\n\n`;
+      case 'h2':
+        return `\n## ${children}\n\n`;
+      case 'h3':
+        return `\n### ${children}\n\n`;
+      case 'h4':
+        return `\n#### ${children}\n\n`;
+      case 'h5':
+        return `\n##### ${children}\n\n`;
+      case 'h6':
+        return `\n###### ${children}\n\n`;
+      case 'p':
+        return `${children}\n\n`;
+      case 'br':
+        return '\n';
+      case 'hr':
+        return '\n---\n\n';
+      case 'strong':
+      case 'b':
+        return `**${children}**`;
+      case 'em':
+      case 'i':
+        return `*${children}*`;
+      case 'code':
+        if (node.parentElement?.tagName.toLowerCase() === 'pre') {
+          return children;
+        }
+        return `\`${children}\``;
+      case 'pre':
+        const codeEl = node.querySelector('code');
+        const lang = codeEl?.className.match(/language-(\w+)/)?.[1] || '';
+        return `\n\`\`\`${lang}\n${children.trim()}\n\`\`\`\n\n`;
+      case 'a':
+        const href = node.getAttribute('href');
+        if (!href) return children;
+        // If link text is same as URL (or just the domain), just show the URL
+        const textTrimmed = children.trim();
+        if (textTrimmed === href || href.includes(textTrimmed) || textTrimmed.match(/^[\w.-]+\.(com|org|net|io|ai|edu|gov)$/i)) {
+          return href;
+        }
+        return `[${children}](${href})`;
+      case 'ul':
+        return `\n${children}\n`;
+      case 'ol':
+        return `\n${children}\n`;
+      case 'li':
+        const parent = node.parentElement?.tagName.toLowerCase();
+        const index = Array.from(node.parentElement?.children || []).indexOf(node);
+        const prefix = parent === 'ol' ? `${index + 1}. ` : '- ';
+        return `${prefix}${children.trim()}\n`;
+      case 'blockquote':
+        return children.split('\n').map(line => `> ${line}`).join('\n') + '\n\n';
+      case 'table':
+        return `\n${children}\n`;
+      case 'thead':
+      case 'tbody':
+        return children;
+      case 'tr':
+        const cells = Array.from(node.children).map(processNode).join(' | ');
+        let row = `| ${cells} |\n`;
+        // Add header separator after first row in thead
+        if (node.parentElement?.tagName.toLowerCase() === 'thead') {
+          const colCount = node.children.length;
+          row += '| ' + Array(colCount).fill('---').join(' | ') + ' |\n';
+        }
+        return row;
+      case 'th':
+      case 'td':
+        return children.trim();
+      case 'div':
+      case 'span':
+        return children;
+      case 'img':
+        const alt = node.getAttribute('alt') || '';
+        const src = node.getAttribute('src') || '';
+        return `![${alt}](${src})`;
+      case 'button':
+      case 'svg':
+      case 'path':
+        return ''; // Skip UI elements
+      default:
+        return children;
+    }
+  }
+
+  result = processNode(element);
+  // Clean up excessive newlines
+  return result.replace(/\n{3,}/g, '\n\n').trim();
+}
+
 // Scrape share page data from DOM (share pages are server-rendered with no API)
 function scrapeSharePage() {
   const shareId = window.location.pathname.split('/').pop();
@@ -41,14 +149,14 @@ function scrapeSharePage() {
       const userEl = userMsgEls[i].querySelector('[class*="font-user-message"]') || userMsgEls[i];
       messages.push({
         sender: 'human',
-        text: userEl.innerText,
+        text: userEl.innerText, // Human messages are plain text
         index: messages.length
       });
     }
     if (i < claudeResponseEls.length) {
       messages.push({
         sender: 'assistant',
-        text: claudeResponseEls[i].innerText,
+        text: htmlToMarkdown(claudeResponseEls[i]), // Convert HTML to markdown
         index: messages.length
       });
     }
