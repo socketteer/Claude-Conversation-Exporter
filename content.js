@@ -1,6 +1,247 @@
 // Note: Organization ID is now stored in extension settings
 // Users need to configure it in the extension options page
 
+// Convert HTML element to markdown
+function htmlToMarkdown(element) {
+  let result = '';
+
+  function processNode(node) {
+    if (node.nodeType === Node.TEXT_NODE) {
+      return node.textContent;
+    }
+
+    if (node.nodeType !== Node.ELEMENT_NODE) {
+      return '';
+    }
+
+    const tag = node.tagName.toLowerCase();
+    const children = Array.from(node.childNodes).map(processNode).join('');
+
+    switch (tag) {
+      case 'h1':
+        return `\n# ${children}\n\n`;
+      case 'h2':
+        return `\n## ${children}\n\n`;
+      case 'h3':
+        return `\n### ${children}\n\n`;
+      case 'h4':
+        return `\n#### ${children}\n\n`;
+      case 'h5':
+        return `\n##### ${children}\n\n`;
+      case 'h6':
+        return `\n###### ${children}\n\n`;
+      case 'p':
+        return `${children}\n\n`;
+      case 'br':
+        return '\n';
+      case 'hr':
+        return '\n---\n\n';
+      case 'strong':
+      case 'b':
+        return `**${children}**`;
+      case 'em':
+      case 'i':
+        return `*${children}*`;
+      case 'code':
+        if (node.parentElement?.tagName.toLowerCase() === 'pre') {
+          return children;
+        }
+        return `\`${children}\``;
+      case 'pre':
+        const codeEl = node.querySelector('code');
+        const lang = codeEl?.className.match(/language-(\w+)/)?.[1] || '';
+        return `\n\`\`\`${lang}\n${children.trim()}\n\`\`\`\n\n`;
+      case 'a':
+        const href = node.getAttribute('href');
+        if (!href) return children;
+        // If link text is same as URL (or just the domain), just show the URL
+        const textTrimmed = children.trim();
+        if (textTrimmed === href || href.includes(textTrimmed) || textTrimmed.match(/^[\w.-]+\.(com|org|net|io|ai|edu|gov)$/i)) {
+          return href;
+        }
+        return `[${children}](${href})`;
+      case 'ul':
+        return `\n${children}\n`;
+      case 'ol':
+        return `\n${children}\n`;
+      case 'li':
+        const parent = node.parentElement?.tagName.toLowerCase();
+        const index = Array.from(node.parentElement?.children || []).indexOf(node);
+        const prefix = parent === 'ol' ? `${index + 1}. ` : '- ';
+        return `${prefix}${children.trim()}\n`;
+      case 'blockquote':
+        return children.split('\n').map(line => `> ${line}`).join('\n') + '\n\n';
+      case 'table':
+        return `\n${children}\n`;
+      case 'thead':
+      case 'tbody':
+        return children;
+      case 'tr':
+        const cells = Array.from(node.children).map(processNode).join(' | ');
+        let row = `| ${cells} |\n`;
+        // Add header separator after first row in thead
+        if (node.parentElement?.tagName.toLowerCase() === 'thead') {
+          const colCount = node.children.length;
+          row += '| ' + Array(colCount).fill('---').join(' | ') + ' |\n';
+        }
+        return row;
+      case 'th':
+      case 'td':
+        return children.trim();
+      case 'div':
+      case 'span':
+        return children;
+      case 'img':
+        const alt = node.getAttribute('alt') || '';
+        const src = node.getAttribute('src') || '';
+        return `![${alt}](${src})`;
+      case 'button':
+      case 'svg':
+      case 'path':
+        return ''; // Skip UI elements
+      default:
+        return children;
+    }
+  }
+
+  result = processNode(element);
+  // Clean up excessive newlines
+  return result.replace(/\n{3,}/g, '\n\n').trim();
+}
+
+// Scrape share page data from DOM (share pages are server-rendered with no API)
+function scrapeSharePage() {
+  const shareId = window.location.pathname.split('/').pop();
+
+  // Get title from header or meta tags
+  const headerEl = document.querySelector('[data-testid="page-header"]');
+  let title = headerEl ? headerEl.innerText : document.title.replace(' | Claude', '');
+
+  // Also try og:title as fallback
+  const ogTitle = document.querySelector('meta[property="og:title"]')?.content;
+
+  // Extract "Shared by X" and remove from title
+  let sharedBy = null;
+  const sharedByMatch = title.match(/\nShared by .+$/);
+  if (sharedByMatch) {
+    sharedBy = sharedByMatch[0].replace('\n', '').trim();
+    title = title.replace(sharedByMatch[0], '');
+  }
+
+  // Use og:title if it's cleaner
+  if (ogTitle && !ogTitle.includes('Shared by')) {
+    title = ogTitle;
+  }
+
+  // Get description from meta
+  const description = document.querySelector('meta[property="og:description"]')?.content ||
+                      document.querySelector('meta[name="description"]')?.content;
+
+  // Extract messages from DOM in API-compatible format
+  const chat_messages = [];
+  const userMsgEls = document.querySelectorAll('[data-testid="user-message"]');
+  const claudeResponseEls = document.querySelectorAll('.font-claude-response');
+
+  // Interleave user and Claude messages
+  const maxLen = Math.max(userMsgEls.length, claudeResponseEls.length);
+  let prevUuid = '00000000-0000-4000-8000-000000000000';
+
+  for (let i = 0; i < maxLen; i++) {
+    if (i < userMsgEls.length) {
+      const userEl = userMsgEls[i].querySelector('[class*="font-user-message"]') || userMsgEls[i];
+      const text = userEl.innerText;
+      const uuid = crypto.randomUUID();
+      chat_messages.push({
+        uuid: uuid,
+        text: text,
+        content: [{ type: 'text', text: text }],
+        sender: 'human',
+        index: chat_messages.length,
+        created_at: null,
+        updated_at: null,
+        parent_message_uuid: prevUuid
+      });
+      prevUuid = uuid;
+    }
+    if (i < claudeResponseEls.length) {
+      const text = htmlToMarkdown(claudeResponseEls[i]);
+      const uuid = crypto.randomUUID();
+      chat_messages.push({
+        uuid: uuid,
+        text: text,
+        content: [{ type: 'text', text: text }],
+        sender: 'assistant',
+        index: chat_messages.length,
+        created_at: null,
+        updated_at: null,
+        parent_message_uuid: prevUuid
+      });
+      prevUuid = uuid;
+    }
+  }
+
+  return {
+    uuid: shareId,
+    name: title,
+    summary: description,
+    sharedBy: sharedBy,
+    source_url: window.location.href,
+    model: null,
+    created_at: null,
+    updated_at: null,
+    scraped_at: new Date().toISOString(),
+    is_starred: false,
+    current_leaf_message_uuid: prevUuid,
+    chat_messages: chat_messages
+  };
+}
+
+// Convert share page data to markdown
+function convertShareToMarkdown(data, includeMetadata) {
+  let markdown = `# ${data.name || 'Untitled Conversation'}\n\n`;
+
+  if (includeMetadata) {
+    if (data.sharedBy) markdown += `**${data.sharedBy}**\n`;
+    markdown += `**Source:** https://claude.ai/share/${data.uuid}\n\n`;
+    markdown += '---\n\n';
+  }
+
+  for (const message of data.chat_messages) {
+    const sender = message.sender === 'human' ? '**You**' : '**Claude**';
+    markdown += `${sender}:\n\n${message.text}\n\n---\n\n`;
+  }
+
+  return markdown;
+}
+
+// Convert share page data to plain text
+function convertShareToText(data, includeMetadata) {
+  let text = '';
+
+  if (includeMetadata) {
+    text += `${data.name || 'Untitled Conversation'}\n`;
+    if (data.sharedBy) text += `${data.sharedBy}\n`;
+    text += `Source: https://claude.ai/share/${data.uuid}\n\n---\n\n`;
+  }
+
+  let humanSeen = false;
+  let assistantSeen = false;
+
+  data.chat_messages.forEach((message) => {
+    let senderLabel;
+    if (message.sender === 'human') {
+      senderLabel = humanSeen ? 'H' : 'Human';
+      humanSeen = true;
+    } else {
+      senderLabel = assistantSeen ? 'A' : 'Assistant';
+      assistantSeen = true;
+    }
+    text += `${senderLabel}: ${message.text}\n\n`;
+  });
+
+  return text.trim();
+}
+
 // Default model timeline for null models
 const DEFAULT_MODEL_TIMELINE = [
   { date: new Date('2024-01-01'), model: 'claude-3-sonnet-20240229' }, // Before June 20, 2024
@@ -223,6 +464,49 @@ function downloadFile(content, filename, type = 'application/json') {
   
   // Handle messages from popup
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+  // Handle share page export (DOM scraping - no API available)
+  if (request.action === 'exportSharePage') {
+    console.log('Export share page request received:', request);
+
+    try {
+      const data = scrapeSharePage();
+      console.log('Share page scraped successfully:', data);
+
+      let content, filename, type;
+      const safeName = (data.name || data.uuid).replace(/[<>:"/\\|?*]/g, '_');
+
+      switch (request.format) {
+        case 'markdown':
+          content = convertShareToMarkdown(data, request.includeMetadata);
+          filename = `claude-share-${safeName}.md`;
+          type = 'text/markdown';
+          break;
+        case 'text':
+          content = convertShareToText(data, request.includeMetadata);
+          filename = `claude-share-${safeName}.txt`;
+          type = 'text/plain';
+          break;
+        default:
+          content = JSON.stringify(data, null, 2);
+          filename = `claude-share-${safeName}.json`;
+          type = 'application/json';
+      }
+
+      console.log('Downloading file:', filename);
+      downloadFile(content, filename, type);
+      sendResponse({ success: true });
+    } catch (error) {
+      console.error('Export share page error:', error);
+      sendResponse({
+        success: false,
+        error: error.message,
+        details: error.stack
+      });
+    }
+
+    return true;
+  }
+
   if (request.action === 'exportConversation') {
     console.log('Export conversation request received:', request);
     
