@@ -38,7 +38,7 @@
   "web_accessible_resources": [
     {
       "resources": ["browse.html"],
-      "matches": ["<all_urls>"]
+      "matches": ["https://claude.ai/*"]
     }
   ]
   }
