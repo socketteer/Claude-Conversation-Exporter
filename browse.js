@@ -127,6 +127,16 @@ function populateModelFilter(models) {
   });
 }
 
+// Escape a string for safe interpolation into HTML (text or double-quoted attribute)
+function escapeHtml(value) {
+  return String(value ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
 // Format model name for display
 function formatModelName(model) {
   return MODEL_DISPLAY_NAMES[model] || model;
@@ -224,28 +234,32 @@ function displayConversations() {
     const createdDate = new Date(conv.created_at).toLocaleDateString();
     const modelBadgeClass = getModelBadgeClass(conv.model);
     
+    const safeUuid = escapeHtml(conv.uuid);
+    const safeName = escapeHtml(conv.name);
+    const safeModelName = escapeHtml(formatModelName(conv.model));
+
     html += `
-      <tr data-id="${conv.uuid}">
+      <tr data-id="${safeUuid}">
         <td>
           <div class="conversation-name">
-            <a href="https://claude.ai/chat/${conv.uuid}" target="_blank" title="${conv.name}">
-              ${conv.name}
+            <a href="https://claude.ai/chat/${safeUuid}" target="_blank" title="${safeName}">
+              ${safeName}
             </a>
           </div>
         </td>
-        <td class="date">${updatedDate}</td>
-        <td class="date">${createdDate}</td>
+        <td class="date">${escapeHtml(updatedDate)}</td>
+        <td class="date">${escapeHtml(createdDate)}</td>
         <td>
-          <span class="model-badge ${modelBadgeClass}">
-            ${formatModelName(conv.model)}
+          <span class="model-badge ${escapeHtml(modelBadgeClass)}">
+            ${safeModelName}
           </span>
         </td>
         <td>
           <div class="actions">
-            <button class="btn-small btn-export" data-id="${conv.uuid}" data-name="${conv.name}">
+            <button class="btn-small btn-export" data-id="${safeUuid}" data-name="${safeName}">
               Export
             </button>
-            <button class="btn-small btn-view" data-id="${conv.uuid}">
+            <button class="btn-small btn-view" data-id="${safeUuid}">
               View
             </button>
           </div>
@@ -509,7 +523,7 @@ async function exportAllFiltered() {
 // Show error message
 function showError(message) {
   const tableContent = document.getElementById('tableContent');
-  tableContent.innerHTML = `<div class="error">${message}</div>`;
+  tableContent.innerHTML = `<div class="error">${escapeHtml(message)}</div>`;
 }
 
 // Show toast notification
